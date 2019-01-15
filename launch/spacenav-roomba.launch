@@ -1,0 +1,7 @@
+<launch>
+ <node pkg="spacenav_node" type="spacenav_node" name="$(anon spacenav_node)" output="screen">
+  <remap from="spacenav/twist" to="cmd_vel" />
+  <rosparam param="linear_scale">[.5, 0, 0]</rosparam>
+  <rosparam param="angular_scale">[1, 1, 1]</rosparam>
+ </node>
+</launch>
