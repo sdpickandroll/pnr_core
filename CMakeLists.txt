@@ -110,7 +110,7 @@ generate_messages(
 ## DEPENDS: system dependencies of this project that dependent projects also need
 catkin_package(
 #  INCLUDE_DIRS include
-  LIBRARIES swiftpro
+  LIBRARIES pnr_ros_base
   CATKIN_DEPENDS roscpp rospy std_msgs geometry_msgs tf sensor_msgs message_runtime
 #  DEPENDS system_lib
 )
@@ -128,7 +128,7 @@ include_directories(
 
 ## Declare a C++ library
 # add_library(${PROJECT_NAME}
-#   src/${PROJECT_NAME}/swiftpro.cpp
+#   src/${PROJECT_NAME}/pnr_ros_base.cpp
 # )
 
 ## Add cmake target dependencies of the library
@@ -159,11 +159,11 @@ add_executable(arm_teleop_node src/arm_teleop_node.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(swiftpro_write_node swiftpro_generate_messages_cpp)
-#add_dependencies(swiftpro_moveit_node swiftpro_generate_messages_cpp)
-#add_dependencies(swiftpro_rviz_node swiftpro_generate_messages_cpp)
-add_dependencies(swiftpro_read_node swiftpro_generate_messages_cpp)
-add_dependencies(arm_teleop_node swiftpro_generate_messages_cpp)
+add_dependencies(swiftpro_write_node pnr_ros_base_generate_messages_cpp)
+#add_dependencies(swiftpro_moveit_node pnr_ros_base_generate_messages_cpp)
+#add_dependencies(swiftpro_rviz_node pnr_ros_base_generate_messages_cpp)
+add_dependencies(swiftpro_read_node pnr_ros_base_generate_messages_cpp)
+add_dependencies(arm_teleop_node pnr_ros_base_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(${PROJECT_NAME}_node
@@ -215,7 +215,7 @@ target_link_libraries(arm_teleop_node ${catkin_LIBRARIES})
 #############
 
 ## Add gtest based cpp test target and link libraries
-# catkin_add_gtest(${PROJECT_NAME}-test test/test_swiftpro.cpp)
+# catkin_add_gtest(${PROJECT_NAME}-test test/test_pnr_ros_base.cpp)
 # if(TARGET ${PROJECT_NAME}-test)
 #   target_link_libraries(${PROJECT_NAME}-test ${PROJECT_NAME})
 # endif()

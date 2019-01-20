@@ -1,19 +1,19 @@
 <?xml version="1.0"?>
 <package>
-  <name>swiftpro</name>
+  <name>pnr_ros_base</name>
   <version>0.0.0</version>
-  <description>The swiftpro package</description>
+  <description>Includes code for all of Pick and Roll's control configurations</description>
 
   <!-- One maintainer tag required, multiple allowed, one person per tag -->
   <!-- Example:  -->
   <!-- <maintainer email="jane.doe@example.com">Jane Doe</maintainer> -->
-  <maintainer email="uf@todo.todo">uf</maintainer>
+  <maintainer email="joshua.m.petrin@vanderbilt.edu">Josh Petrin</maintainer>
 
 
   <!-- One license tag required, multiple allowed, one license per tag -->
   <!-- Commonly used license strings: -->
   <!--   BSD, MIT, Boost Software License, GPLv2, GPLv3, LGPLv2.1, LGPLv3 -->
-  <license>TODO</license>
+  <license>Haha I don't care if you use this, just give me credit first</license>
 
 
   <!-- Url tags are optional, but multiple are allowed, one per tag -->
@@ -25,7 +25,7 @@
   <!-- Author tags are optional, multiple are allowed, one per tag -->
   <!-- Authors do not have to be maintainers, but could be -->
   <!-- Example: -->
-  <!-- <author email="jane.doe@example.com">Jane Doe</author> -->
+  <author email="joshua.m.petrin@vanderbilt.edu">Joshua Petrin</author>
 
 
   <!-- The *_depend tags are used to specify dependencies -->
