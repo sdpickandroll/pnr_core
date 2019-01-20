@@ -14,23 +14,23 @@
 #include <geometry_msgs/Vector3.h>
 #include <geometry_msgs/Twist.h>
 
-#include <swiftpro/SwiftproState.h>
-#include <swiftpro/status.h>
-#include <swiftpro/position.h>
-#include <swiftpro/angle4th.h>
+#include <pnr_ros_base/SwiftproState.h>
+#include <pnr_ros_base/status.h>
+#include <pnr_ros_base/position.h>
+#include <pnr_ros_base/angle4th.h>
 
-#include <swiftpro/position_change.h>
+//#include <pnr_ros_base/position_change.h>
 
 serial::Serial _serial;             // serial object
-swiftpro::SwiftproState pos;
-swiftpro::SwiftproState desired_pos;
+pnr_ros_base::SwiftproState pos;
+pnr_ros_base::SwiftproState desired_pos;
 
 /* 
  * Description: callback when receive data from position_write_topic
  * Inputs:      msg(float)          3 cartesian coordinates: x, y, z(mm)
  * Outputs:     Gcode               send gcode to control swift pro
  */
-void position_write_callback(const swiftpro::position& msg)
+void position_write_callback(const pnr_ros_base::position& msg)
 {
     std::string Gcode("");
     std::string result;
@@ -51,9 +51,9 @@ void position_write_callback(const swiftpro::position& msg)
 }
 
 
-void position_read_callback(const swiftpro::SwiftproState& msg)
+void position_read_callback(const pnr_ros_base::SwiftproState& msg)
 {
-    pos = swiftpro::SwiftproState(msg);
+    pos = pnr_ros_base::SwiftproState(msg);
 }
 
 
@@ -104,7 +104,7 @@ void t_vector_callback(const geometry_msgs::Twist& msg)
  * Inputs:      msg(float)          angle of 4th motor(degree)
  * Outputs:     Gcode               send gcode to control swift pro
  */
-void angle4th_callback(const swiftpro::angle4th& msg)
+void angle4th_callback(const pnr_ros_base::angle4th& msg)
 {
     std::string Gcode = "";
     std_msgs::String result;
@@ -120,11 +120,11 @@ void angle4th_callback(const swiftpro::angle4th& msg)
 
 
 /* 
- * Description: callback when receive data from swiftpro_status_topic
+ * Description: callback when receive data from pnr_ros_base_status_topic
  * Inputs:      msg(uint8)          status of gripper: attach if 1; detach if 0
  * Outputs:     Gcode               send gcode to control swift pro
  */
-void swiftpro_status_callback(const swiftpro::status& msg)
+void swiftpro_status_callback(const pnr_ros_base::status& msg)
 {
     std::string Gcode = "";
     std_msgs::String result;
@@ -151,7 +151,7 @@ void swiftpro_status_callback(const swiftpro::status& msg)
  * Inputs:      msg(uint8)          status of gripper: work if 1; otherwise 0
  * Outputs:     Gcode               send gcode to control swift pro
  */
-void gripper_callback(const swiftpro::status& msg)
+void gripper_callback(const pnr_ros_base::status& msg)
 {
     std::string Gcode = "";
     std_msgs::String result;
@@ -178,7 +178,7 @@ void gripper_callback(const swiftpro::status& msg)
  * Inputs:      msg(uint8)          status of pump: work if 1; otherwise 0
  * Outputs:     Gcode               send gcode to control swift pro
  */
-void pump_callback(const swiftpro::status& msg)
+void pump_callback(const pnr_ros_base::status& msg)
 {
     std::string Gcode = "";
     std_msgs::String result;
@@ -219,7 +219,7 @@ int main(int argc, char** argv)
 {   
     ros::init(argc, argv, "swiftpro_write_node");
     ros::NodeHandle nh;
-    swiftpro::SwiftproState swiftpro_state;
+    pnr_ros_base::SwiftproState swiftpro_state;
 
     ros::Subscriber tsub = nh.subscribe("cmd_vel", 1, t_vector_callback);
     // ros::Subscriber tsub = nh.subscribe("teleop_vector_topic", 1, t_vector_callback);

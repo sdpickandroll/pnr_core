@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(pnr-ros-base)
+project(pnr_ros_base)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -223,7 +223,7 @@ target_link_libraries(arm_teleop_node ${catkin_LIBRARIES})
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-include_directories(include/pnr-ros-base)
+include_directories(include/pnr_ros_base)
 #add_library(MyRobot src/MyRobot.cpp)
 #add_executable(MyRobot src/MyRobot.cpp)
 #target_link_libraries(MyRobot ${catkin_LIBRARIES})
