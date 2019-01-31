@@ -1,5 +1,5 @@
 /* 
- * Software License Agreement
+ * Software License Agreement:
  * do whatever teh crap you want with this software
  * just mention my name if you use it, bitte
  * 
@@ -11,12 +11,12 @@
 #include <ros/console.h>
 #include <serial/serial.h>
 
-// #include <std_msgs/Bool.h> // ?
-#include <std_msgs/String.h>
-#include <std_msgs/Empty.h>
+#include <std_msgs/Bool.h> // ?
+// #include <std_msgs/String.h>
+// #include <std_msgs/Empty.h>
 #include <geometry_msgs/Point.h>
 #include <geometry_msgs/Vector3.h>
-#include <geometry_msgs/Twist.h>
+// #include <geometry_msgs/Twist.h>
 
 #include <pnr_ros_base/uSwiftState.h>
 
@@ -33,12 +33,30 @@
  */
 
 
+// Too many vector commands will flood the uSwift.
+// This variable is set to 'true' every flood_secs seconds.
+bool accept_vector = true;
+int flood_secs = 0.05;
+
+// how fast the move commands are executed on the uSwift
+// (10000 is fastest)
+int move_speed = 10000;
+
+// time between how often this node publishes a new state (secs)
+double pos_update_secs = 0.05;
+
+// publishing clearence, true => ready to publish new state
+bool publish_uswift_state = false;
+
+// published values
+pnr_ros_base::uswift_state us_state;
+geometry_msgs::Point us_pos;
+std_msgs::Bool us_actuator_on;
+
 // serial object, from the amazing ROS serial package
 serial::Serial *usb;
 
-// Too many vector commands will flood the uSwift.
-// This variable is set to 'true' every 50 milliseconds.
-bool accept_vector; 
+
 
 
 void position_write_callback(const geometry_msgs::Point& msg_in)
@@ -46,12 +64,12 @@ void position_write_callback(const geometry_msgs::Point& msg_in)
     char x[8];
     char y[8];
     char z[8];
-    sprintf(x, "%.3f", msg_in.x);
-    sprintf(y, "%.3f", msg_in.y);
-    sprintf(z, "%.3f", msg_in.z);
+    sprintf(x, "%.2f", msg_in.x);
+    sprintf(y, "%.2f", msg_in.y);
+    sprintf(z, "%.2f", msg_in.z);
 
     std::string Gcode = std::string("G0 X") 
-        + x + " Y" + y + " Z" + z + " F10000" + "\r\n";
+        + x + " Y" + y + " Z" + z + " F" + move_speed + "\r\n";
 
     ROS_DEBUG("Sending a position command to the uSwift.\n"
         "Gcode: %s\n", Gcode.c_str());
@@ -59,7 +77,34 @@ void position_write_callback(const geometry_msgs::Point& msg_in)
     usb->write(Gcode.c_str());
 
     std::string result = usb->read(usb->available());
-    if (result != "ok\n") // I think this is right
+    if (result[0] == 'E')
+    {
+        ROS_WARN("Received error from uSwift after the command %s:\n"
+         "%s", Gcode.c_str(), result.c_str());
+    }
+}
+
+
+void cyl_position_write_callback(const geometry_msgs::Point& msg_in)
+{
+    // stretch, rotation, and height (aka: r, theta, z)
+    char s[8];
+    char r[8];
+    char h[8];
+    sprintf(s, "%.2f", msg_in.x);
+    sprintf(r, "%.2f", msg_in.y);
+    sprintf(h, "%.2f", msg_in.z);
+
+    std::string Gcode = std::string("G2201 S") 
+        + s + " R" + r + " H" + h + " F" + move_speed + "\r\n";
+
+    ROS_DEBUG("Sending a cylindrical pos command to the uSwift.\n"
+        "Gcode: %s\n", Gcode.c_str());
+
+    usb->write(Gcode.c_str());
+
+    std::string result = usb->read(usb->available());
+    if (result[0] == 'E')
     {
         ROS_WARN("Received error from uSwift after the command %s:\n"
          "%s", Gcode.c_str(), result.c_str());
@@ -71,59 +116,109 @@ void vector_write_callback(const geometry_msgs::Vector3& msg_in)
 {
     if (accept_vector)
     {
-        std::string Gcode;
         char x[8];
         char y[8];
         char z[8];
 
-        // TODO: Make sure these don't go out of bounds.
-        desired_pos.x += msg_in.linear.x;
-        desired_pos.y += msg_in.linear.y;
-        desired_pos.z += msg_in.linear.z;
+        sprintf(x, "%.2f", msg_in.x);
+        sprintf(y, "%.2f", msg_in.y);
+        sprintf(z, "%.2f", msg_in.z);
 
-        sprintf(x, "%.2f", msg_in.linear.x);
-        sprintf(y, "%.2f", msg_in.linear.y);
-        sprintf(z, "%.2f", msg_in.linear.z);
-
-        Gcode = std::string("G2204 X")
-            + x + " Y" + y + " Z" + z + " F10000" + "\r\n";
+        std::string Gcode = std::string("G2204 X")
+            + x + " Y" + y + " Z" + z + " F" + move_speed + "\r\n";
         ROS_INFO("Sending vector command to the uSwift.\n"
             "Gcode: %s", Gcode.c_str());
         
         usb->write(Gcode.c_str());
 
         std::string result = usb->read(usb->available());
-        if (result != "ok\n") // I think this is right
+        if (result[0] == 'E')
         {
             ROS_WARN("Received error from uSwift after the command %s:\n"
              "%s", Gcode.c_str(), result.c_str());
         }
+
+        accept_vector = false;
+    }
+}
+
+void cyl_vector_write_callback(const geometry_msgs::Vector3& msg_in)
+{
+    if (accept_vector)
+    {
+        char s[8];
+        char r[8];
+        char h[8];
+        sprintf(s, "%.2f", msg_in.x);
+        sprintf(r, "%.2f", msg_in.y);
+        sprintf(h, "%.2f", msg_in.z);
+
+        std::string Gcode = std::string("G2205 S")
+            + s + " R" + r + " H" + h + " F" + move_speed + "\r\n";
+        ROS_INFO("Sending cyl.vector command to the uSwift.\n"
+            "Gcode: %s", Gcode.c_str());
+        
+        usb->write(Gcode.c_str());
+
+        std::string result = usb->read(usb->available());
+        if (result[0] == 'E')
+        {
+            ROS_WARN("Received error from uSwift after the command %s:\n"
+             "%s", Gcode.c_str(), result.c_str());
+        }
+
+        accept_vector = false;
     }
 }
 
 
-/**
- * Process a generic string that is coming from the uSwift
- * (in the form "ok \w# \w# \w#")
- * 
- * TODO: See how the data is formatted form the uSwift, and write
- * this function for to that format. 
- */
-process_str()
+void actuator_write_callback(const std_msgs::Bool& msg_in)
 {
-    char str[2048];
+    actuator_on.data = msg_in.data;
+
+    // TODO:
+    // Not sure if this should be M2231 or M2232...
+    // Depends on whether we have the suction or the gripper installed
+    std::string Gcode = "M2231 ";
+    if (actuator_on.data)
+        Gcode += "V1";
+    else
+        Gcode += "V0";
+
+    ROS_INFO("Sending actuator command to the uSwift.\n"
+        "Gcode: %s", Gcode.c_str());
+        
+    usb->write(Gcode.c_str());
+
+    std::string result = usb->read(usb->available());
+    if (result[0] == 'E')
+    {
+        ROS_WARN("Received error from uSwift after the command %s:\n"
+         "%s", Gcode.c_str(), result.c_str());
+    }
+}
+
+/**
+ * TODO: Document this confusing document (lol) 
+ */
+void state_read_callback(const ros::TimerEvent&)
+{
+    // I'm not sure if it's possible to get the state of 
+    // all the joints from the uSwift, so for now, we'll just
+    // do the actuator angle and the end effector position.
+
+    char str[150];
     strcpy(str, data.c_str());
     char* pch = strtok(str, " ");
     float x, y, z, r;
-    int vals = 0;
 
+    int vals = 0;
 
     while (vals < 4)
     {
         if (pch == NULL)
         {
-            ROS_INFO_STREAM("Serial data misaligned. "
-                "Defaulting to previous measurement.");
+            ROS_INFO_STREAM("uSwift data misaligned.");
             return;
         }
         switch (pch[0])
@@ -147,218 +242,128 @@ process_str()
             case '@':
                 break;
             default:
-                ROS_INFO_STREAM("Serial data misaligned. "
-                    "Defaulting to previous measurement.");
+                ROS_INFO_STREAM("uSwift data misaligned.");
                 return;
         }
         pch = strtok(NULL, " ");
     }
 
-    state->motor_angle4 = r;
-    state->x = x;
-    state->y = y;
-    state->z = z;
+    // pnr_ros_base::uswift_state us_state
+    us_state.x = x;
+    us_state.y = y;
+    us_state.z = z;
+    us_state.angle_actuator = r;
+    us_state.actuator = us_actuator_on.data;
+
+    // geometry_msgs::Point us_pos
+    us_pos.x = x;
+    us_pos.y = y;
+    us_pos.z = z;
+
+    // std_msgs::Bool us_actuator_on
+    // we assume that the state of the actuator is equal to our stored state
+
+    // we can publish now
+    publish_uswift_state = true;
 }
 
 
-
-/**
- * The uswift_state_write sub can only receive either angle commands or
- * position commands, but not both.
- */
-void state_write_callback(const pnr_ros_base::uSwiftState& msg_in)
+void vector_accept_callback(const ros::TimerEvent&)
 {
-    // Check to see if any angle changes are desired
-    if (msg_in.angle_base_motor == 0 &&
-        msg_in.angle_arm_motor == 0 &&
-        msg_in.angle_hand_motor == 0 &&
-        msg_in.angle_base_motor == 0)
-    {
-        geometry_msgs::Point& point;
-        point.x = msg_in.x;
-        point.y = msg_in.y;
-        point.z = msg_in.z;
-
-        position_write_callback(point);
-    }
-    else
-    {
-        std::string Gcode = std::string("G0 X") 
-        + x + " Y" + y + " Z" + z + " F10000" + "\r\n";
-    }
-    char x[8];
-    char y[8];
-    char z[8];
-    sprintf(x, "%.3f", in_msg.x);
-    sprintf(y, "%.3f", in_msg.y);
-    sprintf(z, "%.3f", in_msg.z);
-
-    std::string Gcode = std::string("G0 X") 
-        + x + " Y" + y + " Z" + z + " F10000" + "\r\n";
-
-    ROS_DEBUG("Sending position command to the uSwift.\n"
-        "Gcode: %s\n", Gcode.c_str());
-
-    usb->write(Gcode.c_str());
-    std::string result = usb->read(usb->available());
-
-    sprintf(m4, "%.2f", msg.angle4th);
-    Gcode = (std::string)"G2202 N3 V" + m4 + "\r\n";
-    ROS_INFO("%s", Gcode.c_str());
-    _serial.write(Gcode.c_str());
-    result.data = _serial.read(_serial.available());
-}
-
-
-/* 
- * Description: callback when receive data from swiftpro_status_topic
- * Inputs:      msg(uint8)          status of gripper: attach if 1; detach if 0
- * Outputs:     Gcode               send gcode to control swift pro
- */
-void swiftpro_status_callback(const swiftpro::status& msg)
-{
-    std::string Gcode = "";
-    std_msgs::String result;
-
-    if (msg.status == 1)
-        Gcode = (std::string)"M17\r\n";   // attach
-    else if (msg.status == 0)
-        Gcode = (std::string)"M2019\r\n";
-    else
-    {
-        ROS_INFO("Error:Wrong swiftpro status input");
-        return;
-    }
-    
-    desired_pos.swiftpro_status = msg.status;
-    ROS_INFO("%s", Gcode.c_str());
-    _serial.write(Gcode.c_str());
-    result.data = _serial.read(_serial.available());
-}
-
-
-/* 
- * Description: callback when receive data from gripper_topic
- * Inputs:      msg(uint8)          status of gripper: work if 1; otherwise 0
- * Outputs:     Gcode               send gcode to control swift pro
- */
-void gripper_callback(const swiftpro::status& msg)
-{
-    std::string Gcode = "";
-    std_msgs::String result;
-
-    if (msg.status == 1)
-        Gcode = (std::string)"M2232 V1" + "\r\n";
-    else if (msg.status == 0)
-        Gcode = (std::string)"M2232 V0" + "\r\n";
-    else
-    {
-        ROS_INFO("Error:Wrong gripper status input");
-        return;
-    }
-    
-    desired_pos.gripper = msg.status;
-    ROS_INFO("%s", Gcode.c_str());
-    _serial.write(Gcode.c_str());
-    result.data = _serial.read(_serial.available());
-}
-
-
-/* 
- * Description: callback when receive data from pump_topic
- * Inputs:      msg(uint8)          status of pump: work if 1; otherwise 0
- * Outputs:     Gcode               send gcode to control swift pro
- */
-void pump_callback(const swiftpro::status& msg)
-{
-    std::string Gcode = "";
-    std_msgs::String result;
-
-    if (msg.status == 1)
-        Gcode = (std::string)"M2231 V1" + "\r\n";
-    else if (msg.status == 0)
-        Gcode = (std::string)"M2231 V0" + "\r\n";
-    else
-    {
-        ROS_INFO("Error:Wrong pump status input");
-        return;
-    }
-    
-    desired_pos.pump = msg.status;
-    ROS_INFO("%s", Gcode.c_str());
-    _serial.write(Gcode.c_str());
-    result.data = _serial.read(_serial.available());
+    accept_vector = true;
 }
 
 
 /* 
  * Node name:
- *   swiftpro_write_node
+ *   
  *
- * Topic publish: (rate = 20Hz, queue size = 1)
- *   swiftpro_state_topic
+ * Topics published: (rate = 20Hz, queue size = 1)
+ *   
  *
- * Topic subscribe: (queue size = 1)
- *   robot_vector
- *   position_write_topic
- *   swiftpro_status_topic
- *   angle4th_topic
- *   gripper_topic
- *   pump_topic
+ * Topics subscribed: (queue size = 1)
+ *   
  */
 int main(int argc, char** argv)
-{   
+{
     ros::init(argc, argv, "swiftpro_node");
     ros::NodeHandle nh;
+
+    // the uSwift's position update timer
+    ros::Timer pos_update_timer 
+        = nh.createTimer(ros::Duration(pos_update_secs), state_read_callback);
+
+    // the vector timer update manager (ensure the vectors don't flood)
+    ros::Timer vec_timer_manager
+        = nh.createTimer(ros::Duration(flood_secs), vector_accept_callback);
+
+    // set defaults for the messages
+    actuator_on.data = false;
 
     // complete state of the robot
     ros::Publisher us_state_pub
         = nh.advertise<pnr_ros_base::uswift_state>("uswift_state", 1);
-    ros::Publisher us_pos_pub = nh.advertise<geometry_msgs::Point>("uswift_position", 1);
-    ros::Publisher us_actuator_pub = nh.advertise<std_msgs::Bool>("uswift_actuator_on", 1);
+    ros::Publisher us_pos_pub = 
+        nh.advertise<geometry_msgs::Point>("uswift_position", 1);
+    ros::Publisher us_actuator_on_pub = 
+        nh.advertise<std_msgs::Bool>("uswift_actuator", 1);
 
-    ros::Subscriber ste_sub = nh.subscribe("uswift_state_write", 1, state_write_callback);
-    ros::Subscriber pos_sub = nh.subscribe("uswift_position_write", 1, position_write_callback);
-    ros::Subscriber vec_sub = nh.subscribe("uswift_vector_write", 1, vector_write_callback);
-    ros::Subscriber atr_sub = nh.subscribe("uswift_actuator_write", 1, state_actuator_callback);
+    ros::Subscriber pos_sub = 
+        nh.subscribe("uswift_position_write", 1, position_write_callback);
+    ros::Subscriber pcy_sub = 
+        nh.subscribe("uswift_cyl_position_write", 1, cyl_position_write_callback);
+    ros::Subscriber vec_sub = 
+        nh.subscribe("uswift_vector_write", 1, vector_write_callback);
+    ros::Subscriber vcy_sub = 
+        nh.subscribe("uswift_cyl_vector_write", 1, cyl_vector_write_callback);
+    ros::Subscriber atr_sub = 
+        nh.subscribe("uswift_actuator_write", 1, actuator_write_callback);
     // ros::Rate loop_rate(20);
 
     ros::Duration(3.5).sleep();  // wait 3.5s (???)
 
     try
     {
-        serial = new serial::Serial(std::string(name), 115200, serial::Timeout::simpleTimeout(1000));
-        serial.setPort("/dev/ttyACM0");
-        serial.setBaudrate(115200);
-        serial::Timeout to = serial::Timeout::simpleTimeout(1000);
-        serial.setTimeout(to);
-        serial.open();
-        ROS_INFO_STREAM("Port has been open successfully");
+        serial = new serial::Serial(
+            std::string(name), 
+            115200, 
+            serial::Timeout::simpleTimeout(1000));
+        ROS_INFO_STREAM("uSwift's USB port has been opened successfully");
     }
     catch (serial::IOException& e)
     {
-        ROS_ERROR_STREAM("Unable to open port");
+        ROS_ERROR_STREAM("Unable to open USB port for the uSwift!");
+        ROS_ERROR_STREAM("Trace: " << e.what());
         return -1;
     }
     
-    if (_serial.isOpen())
+    if (serial->isOpen())
     {
         ros::Duration(3.5).sleep();             // wait 3.5s
         // _serial.write("M2120 V0\r\n");          // stop report position
         ros::Duration(0.1).sleep();             // wait 0.1s
-        _serial.write("M17\r\n");               // attach
-        ros::Duration(0.1).sleep();             // wait 0.1s
-        ROS_INFO_STREAM("Attach and wait for commands");
+        serial->write("M17\r\n");               // attach
+        ros::Duration(0.5).sleep();             // wait 0.5s
+        serial->write("G0 X-71 Y0 Z26.5");      // move to the uncalibrated "home" position
+                                                // TODO: Learn how to calibrate this mugger
+                                                // Maybe have a command that sets home position??
+        ROS_INFO_STREAM("uSwift attached and waiting for commands.");
+        ros::Duration(1.0).sleep();             // wait 1s
+        // Ask for position updates every pos_update_secs seconds.
+        serial->write((std::string("M2120 V") + pos_update_secs).c_str());
     }
 
     while (ros::ok())
     {
-        // pub.publish(desired_pos);
-        ros::spin();
-        // loop_rate.sleep();
+        if (publish_uswift_state)
+        {
+            us_state_pub.publish(us_state);
+            us_pos_pub.publish(us_pos);
+            us_actuator_on_pub.publish(us_actuator_on);
+            publish_uswift_state = false;
+        }
+        ros::spinOnce();
     }
     
-    return 0;
+    return 0;  // Трахни грудь моей женщины! 
 }
-
-
