@@ -355,16 +355,38 @@ int main(int argc, char** argv)
         // usb->write("M2120 V0\r\n");  // stop report position
         ros::Duration(0.1).sleep();     // wait 0.1s
         usb->write("M17\r\n");          // attach
+        ROS_INFO_STREAM("uSwift attached and waiting for commands.");
+        ros::Duration(1.0).sleep();             // wait 1s
+
+        std::string result = usb->read(usb->available());
+        ROS_INFO("uSwift startup message: \n%s", result.c_str());
+
+        // Ask for position updates every pos_update_secs seconds.
+        char pus_msg[50];
+        sprintf(pus_msg, "M2120 V%.5f", pos_update_secs);
+
+
         ros::Duration(0.5).sleep();     // wait 0.5s
         usb->write("G0 X-71 Y0 Z26.5"); // move to the uncalibrated "home" position
                                         // TODO: Learn how to calibrate this mugger
                                         // Maybe have a command that sets home position??
-        ROS_INFO_STREAM("uSwift attached and waiting for commands.");
-        ros::Duration(1.0).sleep();             // wait 1s
-        // Ask for position updates every pos_update_secs seconds.
-        char pus_msg[3025];
-        sprintf(pus_msg, "M2120 V%.5f", pos_update_secs);
+        result = usb->read(usb->available());
+        if (result[0] == 'E')
+        {
+            ROS_WARN("Received error from uSwift after the command %s:\n"
+             "%s", "G0 X-71 Y0 Z26.5", result.c_str());
+        }
+
+
+        ROS_INFO("Sending feedback command to the uSwift.\n"
+            "Gcode: %s", pus_msg);
         usb->write(pus_msg);
+        result = usb->read(usb->available());
+        if (result[0] == 'E')
+        {
+            ROS_WARN("Received error from uSwift after the command %s:\n"
+             "%s", pus_msg, result.c_str());
+        }
     }
 
     while (ros::ok())
