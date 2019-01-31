@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 2.8.3)
-project(pnr-ros-base)
+project(pnr_ros_base)
 
 ## Compile as C++11, supported in ROS Kinetic and newer
 # add_compile_options(-std=c++11)
@@ -53,11 +53,7 @@ find_package(catkin REQUIRED COMPONENTS
 ## Generate messages in the 'msg' folder
 add_message_files(
   FILES
-  SwiftproState.msg
-  position.msg
-  vector.msg
-  angle4th.msg
-  status.msg
+  uSwiftState.msg
 )
 
 ## Generate services in the 'srv' folder
@@ -78,6 +74,7 @@ add_message_files(
 generate_messages(
   DEPENDENCIES
   std_msgs
+  geometry_msgs
 )
 
 ################################################
@@ -143,7 +140,7 @@ include_directories(
 add_executable(swiftpro_write_node src/swiftpro_write_node.cpp)
 #add_executable(swiftpro_moveit_node src/swiftpro_moveit_node.cpp)
 #add_executable(swiftpro_rviz_node src/swiftpro_rviz_node.cpp)
-add_executable(swiftpro_read_node src/swiftpro_read_node.cpp)
+#add_executable(swiftpro_read_node src/swiftpro_read_node.cpp)
 add_executable(arm_teleop_node src/arm_teleop_node.cpp)
 
 ## Rename C++ executable without prefix
@@ -162,7 +159,7 @@ add_executable(arm_teleop_node src/arm_teleop_node.cpp)
 add_dependencies(swiftpro_write_node pnr_ros_base_generate_messages_cpp)
 #add_dependencies(swiftpro_moveit_node pnr_ros_base_generate_messages_cpp)
 #add_dependencies(swiftpro_rviz_node pnr_ros_base_generate_messages_cpp)
-add_dependencies(swiftpro_read_node pnr_ros_base_generate_messages_cpp)
+#add_dependencies(swiftpro_read_node pnr_ros_base_generate_messages_cpp)
 add_dependencies(arm_teleop_node pnr_ros_base_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
@@ -172,7 +169,7 @@ add_dependencies(arm_teleop_node pnr_ros_base_generate_messages_cpp)
 target_link_libraries(swiftpro_write_node ${catkin_LIBRARIES})
 #target_link_libraries(swiftpro_moveit_node ${catkin_LIBRARIES})
 #target_link_libraries(swiftpro_rviz_node ${catkin_LIBRARIES})
-target_link_libraries(swiftpro_read_node ${catkin_LIBRARIES})
+#target_link_libraries(swiftpro_read_node ${catkin_LIBRARIES})
 target_link_libraries(arm_teleop_node ${catkin_LIBRARIES})
 
 #############

@@ -5,4 +5,4 @@ float64 angle_actuator
 float64 x
 float64 y
 float64 z
-bool	actuator
+bool actuator

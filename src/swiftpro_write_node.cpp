@@ -36,7 +36,7 @@
 // Too many vector commands will flood the uSwift.
 // This variable is set to 'true' every flood_secs seconds.
 bool accept_vector = true;
-int flood_secs = 0.05;
+double flood_secs = 0.05;
 
 // how fast the move commands are executed on the uSwift
 // (10000 is fastest)
@@ -49,7 +49,7 @@ double pos_update_secs = 0.05;
 bool publish_uswift_state = false;
 
 // published values
-pnr_ros_base::uswift_state us_state;
+pnr_ros_base::uSwiftState us_state;
 geometry_msgs::Point us_pos;
 std_msgs::Bool us_actuator_on;
 
@@ -64,12 +64,14 @@ void position_write_callback(const geometry_msgs::Point& msg_in)
     char x[8];
     char y[8];
     char z[8];
+    char ms[8];
     sprintf(x, "%.2f", msg_in.x);
     sprintf(y, "%.2f", msg_in.y);
     sprintf(z, "%.2f", msg_in.z);
+    sprintf(ms, "%i", move_speed);
 
     std::string Gcode = std::string("G0 X") 
-        + x + " Y" + y + " Z" + z + " F" + move_speed + "\r\n";
+        + x + " Y" + y + " Z" + z + " F" + ms + "\n";
 
     ROS_DEBUG("Sending a position command to the uSwift.\n"
         "Gcode: %s\n", Gcode.c_str());
@@ -91,12 +93,15 @@ void cyl_position_write_callback(const geometry_msgs::Point& msg_in)
     char s[8];
     char r[8];
     char h[8];
+    char ms[8];
     sprintf(s, "%.2f", msg_in.x);
     sprintf(r, "%.2f", msg_in.y);
     sprintf(h, "%.2f", msg_in.z);
+    sprintf(ms, "%i", move_speed);
+
 
     std::string Gcode = std::string("G2201 S") 
-        + s + " R" + r + " H" + h + " F" + move_speed + "\r\n";
+        + s + " R" + r + " H" + h + " F" + ms + "\n";
 
     ROS_DEBUG("Sending a cylindrical pos command to the uSwift.\n"
         "Gcode: %s\n", Gcode.c_str());
@@ -119,13 +124,15 @@ void vector_write_callback(const geometry_msgs::Vector3& msg_in)
         char x[8];
         char y[8];
         char z[8];
-
+        char ms[8];
         sprintf(x, "%.2f", msg_in.x);
         sprintf(y, "%.2f", msg_in.y);
         sprintf(z, "%.2f", msg_in.z);
+        sprintf(ms, "%i", move_speed);
+
 
         std::string Gcode = std::string("G2204 X")
-            + x + " Y" + y + " Z" + z + " F" + move_speed + "\r\n";
+            + x + " Y" + y + " Z" + z + " F" + ms + "\n";
         ROS_INFO("Sending vector command to the uSwift.\n"
             "Gcode: %s", Gcode.c_str());
         
@@ -149,12 +156,14 @@ void cyl_vector_write_callback(const geometry_msgs::Vector3& msg_in)
         char s[8];
         char r[8];
         char h[8];
+        char ms[8];
         sprintf(s, "%.2f", msg_in.x);
         sprintf(r, "%.2f", msg_in.y);
         sprintf(h, "%.2f", msg_in.z);
+        sprintf(ms, "%i", move_speed);
 
         std::string Gcode = std::string("G2205 S")
-            + s + " R" + r + " H" + h + " F" + move_speed + "\r\n";
+            + s + " R" + r + " H" + h + " F" + ms + "\n";
         ROS_INFO("Sending cyl.vector command to the uSwift.\n"
             "Gcode: %s", Gcode.c_str());
         
@@ -174,13 +183,13 @@ void cyl_vector_write_callback(const geometry_msgs::Vector3& msg_in)
 
 void actuator_write_callback(const std_msgs::Bool& msg_in)
 {
-    actuator_on.data = msg_in.data;
+    us_actuator_on.data = msg_in.data;
 
     // TODO:
     // Not sure if this should be M2231 or M2232...
     // Depends on whether we have the suction or the gripper installed
     std::string Gcode = "M2231 ";
-    if (actuator_on.data)
+    if (us_actuator_on.data)
         Gcode += "V1";
     else
         Gcode += "V0";
@@ -207,7 +216,10 @@ void state_read_callback(const ros::TimerEvent&)
     // all the joints from the uSwift, so for now, we'll just
     // do the actuator angle and the end effector position.
 
-    char str[150];
+    std::string data = usb->read(usb->available());
+    ROS_INFO_STREAM("Read from USB: " << data);
+
+    char str[200];
     strcpy(str, data.c_str());
     char* pch = strtok(str, " ");
     float x, y, z, r;
@@ -298,11 +310,11 @@ int main(int argc, char** argv)
         = nh.createTimer(ros::Duration(flood_secs), vector_accept_callback);
 
     // set defaults for the messages
-    actuator_on.data = false;
+    us_actuator_on.data = false;
 
     // complete state of the robot
     ros::Publisher us_state_pub
-        = nh.advertise<pnr_ros_base::uswift_state>("uswift_state", 1);
+        = nh.advertise<pnr_ros_base::uSwiftState>("uswift_state", 1);
     ros::Publisher us_pos_pub = 
         nh.advertise<geometry_msgs::Point>("uswift_position", 1);
     ros::Publisher us_actuator_on_pub = 
@@ -324,8 +336,8 @@ int main(int argc, char** argv)
 
     try
     {
-        serial = new serial::Serial(
-            std::string(name), 
+        usb = new serial::Serial(
+            std::string("/dev/ttyACM0"), // TODO: Make a program that will test the ports for uSwift's
             115200, 
             serial::Timeout::simpleTimeout(1000));
         ROS_INFO_STREAM("uSwift's USB port has been opened successfully");
@@ -337,20 +349,22 @@ int main(int argc, char** argv)
         return -1;
     }
     
-    if (serial->isOpen())
+    if (usb->isOpen())
     {
-        ros::Duration(3.5).sleep();             // wait 3.5s
-        // _serial.write("M2120 V0\r\n");          // stop report position
-        ros::Duration(0.1).sleep();             // wait 0.1s
-        serial->write("M17\r\n");               // attach
-        ros::Duration(0.5).sleep();             // wait 0.5s
-        serial->write("G0 X-71 Y0 Z26.5");      // move to the uncalibrated "home" position
-                                                // TODO: Learn how to calibrate this mugger
-                                                // Maybe have a command that sets home position??
+        ros::Duration(3.5).sleep();     // wait 3.5s
+        // usb->write("M2120 V0\r\n");  // stop report position
+        ros::Duration(0.1).sleep();     // wait 0.1s
+        usb->write("M17\r\n");          // attach
+        ros::Duration(0.5).sleep();     // wait 0.5s
+        usb->write("G0 X-71 Y0 Z26.5"); // move to the uncalibrated "home" position
+                                        // TODO: Learn how to calibrate this mugger
+                                        // Maybe have a command that sets home position??
         ROS_INFO_STREAM("uSwift attached and waiting for commands.");
         ros::Duration(1.0).sleep();             // wait 1s
         // Ask for position updates every pos_update_secs seconds.
-        serial->write((std::string("M2120 V") + pos_update_secs).c_str());
+        char pus_msg[3025];
+        sprintf(pus_msg, "M2120 V%.5f", pos_update_secs);
+        usb->write(pus_msg);
     }
 
     while (ros::ok())

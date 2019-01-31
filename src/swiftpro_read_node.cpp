@@ -14,7 +14,7 @@
 #include <ros/ros.h>
 #include <serial/serial.h>
 #include <std_msgs/String.h>
-#include <swiftpro/SwiftproState.h>
+// #include <swiftpro/SwiftproState.h>
 
 #include <exception>
 #include <string>
