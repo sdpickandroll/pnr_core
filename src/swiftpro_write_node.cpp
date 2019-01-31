@@ -26,7 +26,7 @@
  * 
  * E20 = Command does not exist
  * E21 = Parameter error
- * E22 = Address out of range
+ * E22 = Location out of range
  * E23 = Command buffer full
  * E24 = Power unconnected
  * E25 = Operation failure
@@ -193,6 +193,7 @@ void actuator_write_callback(const std_msgs::Bool& msg_in)
         Gcode += "V1";
     else
         Gcode += "V0";
+    Gcode += "\n"; // this is very important!!
 
     ROS_INFO("Sending actuator command to the uSwift.\n"
         "Gcode: %s", Gcode.c_str());
@@ -218,6 +219,9 @@ void state_read_callback(const ros::TimerEvent&)
 
     std::string data = usb->read(usb->available());
     ROS_INFO_STREAM("Read from USB: " << data);
+    // DEBUG
+    // data = usb->read(usb->available());
+    // ROS_INFO_STREAM("Read from USB: " << data);
 
     char str[200];
     strcpy(str, data.c_str());
@@ -298,16 +302,8 @@ void vector_accept_callback(const ros::TimerEvent&)
  */
 int main(int argc, char** argv)
 {
-    ros::init(argc, argv, "swiftpro_node");
+    ros::init(argc, argv, "pnr_swiftpro_node");
     ros::NodeHandle nh;
-
-    // the uSwift's position update timer
-    ros::Timer pos_update_timer 
-        = nh.createTimer(ros::Duration(pos_update_secs), state_read_callback);
-
-    // the vector timer update manager (ensure the vectors don't flood)
-    ros::Timer vec_timer_manager
-        = nh.createTimer(ros::Duration(flood_secs), vector_accept_callback);
 
     // set defaults for the messages
     us_actuator_on.data = false;
@@ -316,7 +312,7 @@ int main(int argc, char** argv)
     ros::Publisher us_state_pub
         = nh.advertise<pnr_ros_base::uSwiftState>("uswift_state", 1);
     ros::Publisher us_pos_pub = 
-        nh.advertise<geometry_msgs::Point>("uswift_position", 1);
+        nh.advertise<geometry_msgs::Point>("pnr/uswift_position", 1);
     ros::Publisher us_actuator_on_pub = 
         nh.advertise<std_msgs::Bool>("uswift_actuator", 1);
 
@@ -354,52 +350,71 @@ int main(int argc, char** argv)
         ros::Duration(3.5).sleep();     // wait 3.5s
         // usb->write("M2120 V0\r\n");  // stop report position
         ros::Duration(0.1).sleep();     // wait 0.1s
-        usb->write("M17\r\n");          // attach
+        usb->write("M17\n");            // attach
         ROS_INFO_STREAM("uSwift attached and waiting for commands.");
-        ros::Duration(1.0).sleep();             // wait 1s
+        ros::Duration(1.0).sleep();     // wait 1s
+
+        // Read from USB: @3 X86.8411 Y-0.1332 Z88.6395 R89.1000
+
 
         std::string result = usb->read(usb->available());
         ROS_INFO("uSwift startup message: \n%s", result.c_str());
 
-        // Ask for position updates every pos_update_secs seconds.
-        char pus_msg[50];
-        sprintf(pus_msg, "M2120 V%.5f", pos_update_secs);
-
-
-        ros::Duration(0.5).sleep();     // wait 0.5s
-        usb->write("G0 X-71 Y0 Z26.5"); // move to the uncalibrated "home" position
-                                        // TODO: Learn how to calibrate this mugger
-                                        // Maybe have a command that sets home position??
+        ros::Duration(0.5).sleep();       // wait 0.5s
+        usb->write("G0 X86.8411 Y-0.1332 Z33.6395 F1000\n"); // move to the uncalibrated "home" position
+                                          // TODO: Learn how to calibrate this mugger
+                                          // Maybe have a command that sets home position??
+        ros::Duration(0.01).sleep();      // wait 0.01s
         result = usb->read(usb->available());
         if (result[0] == 'E')
         {
             ROS_WARN("Received error from uSwift after the command %s:\n"
-             "%s", "G0 X-71 Y0 Z26.5", result.c_str());
+             "%s", "G0 X86.8411 Y-0.1332 Z33.6395 F1000\n", result.c_str());
         }
 
+        ros::Duration(1.0).sleep();     // wait 1.0s
+
+        // Ask for position updates every pos_update_secs seconds.
+        char pus_msg[100];
+        sprintf(pus_msg, "M2120 V%.3f\n", pos_update_secs);
 
         ROS_INFO("Sending feedback command to the uSwift.\n"
             "Gcode: %s", pus_msg);
         usb->write(pus_msg);
+        ros::Duration(pos_update_secs).sleep(); // wait for an update?
+        // ros::Duration(0.01).sleep();     // wait 0.01s
         result = usb->read(usb->available());
         if (result[0] == 'E')
         {
             ROS_WARN("Received error from uSwift after the command %s:\n"
              "%s", pus_msg, result.c_str());
         }
+
+
+        // initialize and start timers
+
+        // the uSwift's position update timer
+        ros::Timer pos_update_timer 
+            = nh.createTimer(ros::Duration(pos_update_secs), state_read_callback);
+
+        // the vector timer update manager (ensure the vectors don't flood)
+        ros::Timer vec_timer_manager
+            = nh.createTimer(ros::Duration(flood_secs), vector_accept_callback);
+
+        // program loop: wait for callbacks and publish when we are ready
+        while (ros::ok())
+        {
+            if (publish_uswift_state)
+            {
+                us_state_pub.publish(us_state);
+                us_pos_pub.publish(us_pos);
+                us_actuator_on_pub.publish(us_actuator_on);
+                publish_uswift_state = false;
+            }
+            ros::spinOnce();
+        }
     }
 
-    while (ros::ok())
-    {
-        if (publish_uswift_state)
-        {
-            us_state_pub.publish(us_state);
-            us_pos_pub.publish(us_pos);
-            us_actuator_on_pub.publish(us_actuator_on);
-            publish_uswift_state = false;
-        }
-        ros::spinOnce();
-    }
     
     return 0;  // Трахни грудь моей женщины! 
 }
