@@ -1,0 +1,19 @@
+
+A record of the publishers and subscribers that pnr_ros_base has to offer
+
+
+
+__uSwift__
+
+Publishers:
+- uswift_state (pnr_ros_base::uSwiftState)
+- uswift_position (geometry_msgs::Point)
+- uswift_actuator_on (std_msgs::Bool)
+
+Subscribes to:
+- uswift_state_write (pnr_ros_base::uSwiftState)
+- uswift_position_write (geometry_msgs::Point)
+- uswift_vector_write (geometry_msgs::Vector3)
+- uswift_cyl_position_write (geometry_msgs::Vector3)
+- uswift_
+- uswift_actuator_write (std_msgs::Bool)

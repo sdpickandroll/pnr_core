@@ -22,7 +22,7 @@
 // Unix standard header
 #include <sys/stat.h>
 
-serial::Serial _serial;             // serial object
+serial::Serial _serial; // serial object
 
 
 void processstr(swiftpro::SwiftproState* state, std::string data)
