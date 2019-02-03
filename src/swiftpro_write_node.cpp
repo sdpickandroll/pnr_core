@@ -18,6 +18,7 @@
 #include <geometry_msgs/Vector3.h>
 // #include <geometry_msgs/Twist.h>
 
+<<<<<<< HEAD
 #include <pnr_ros_base/uSwiftState.h>
 
 /*
@@ -37,13 +38,57 @@
 // This variable is set to 'true' every flood_secs seconds.
 bool accept_vector = true;
 double flood_secs = 0.05;
+=======
+#include <pnr_ros_base/SwiftproState.h>
+#include <pnr_ros_base/status.h>
+#include <pnr_ros_base/position.h>
+#include <pnr_ros_base/angle4th.h>
+
+//#include <pnr_ros_base/position_change.h>
+
+serial::Serial _serial;             // serial object
+pnr_ros_base::SwiftproState pos;
+pnr_ros_base::SwiftproState desired_pos;
+
+/* 
+ * Description: callback when receive data from position_write_topic
+ * Inputs:      msg(float)          3 cartesian coordinates: x, y, z(mm)
+ * Outputs:     Gcode               send gcode to control swift pro
+ */
+void position_write_callback(const pnr_ros_base::position& msg)
+{
+    std::string Gcode("");
+    std::string result;
+    char x[10];
+    char y[10];
+    char z[10];
+
+    desired_pos.x = msg.x;
+    desired_pos.y = msg.y;
+    desired_pos.z = msg.z;
+    sprintf(x, "%.2f", msg.x);
+    sprintf(y, "%.2f", msg.y);
+    sprintf(z, "%.2f", msg.z);
+    Gcode = std::string("G0 X") + x + " Y" + y + " Z" + z + " F10000" + "\r\n";
+    ROS_INFO("Gcode: %s\n", Gcode.c_str());
+    _serial.write(Gcode.c_str());
+    result = _serial.read(_serial.available());
+}
+>>>>>>> origin/master
 
 // how fast the move commands are executed on the uSwift
 // (10000 is fastest)
 int move_speed = 10000;
 
+<<<<<<< HEAD
 // time between how often this node publishes a new state (secs)
 double pos_update_secs = 0.05;
+=======
+void position_read_callback(const pnr_ros_base::SwiftproState& msg)
+{
+    pos = pnr_ros_base::SwiftproState(msg);
+}
+>>>>>>> origin/master
 
 // publishing clearence, true => ready to publish new state
 bool publish_uswift_state = false;
@@ -87,7 +132,16 @@ void position_write_callback(const geometry_msgs::Point& msg_in)
 }
 
 
+<<<<<<< HEAD
 void cyl_position_write_callback(const geometry_msgs::Point& msg_in)
+=======
+/* 
+ * Description: callback when receive data from angle4th_topic
+ * Inputs:      msg(float)          angle of 4th motor(degree)
+ * Outputs:     Gcode               send gcode to control swift pro
+ */
+void angle4th_callback(const pnr_ros_base::angle4th& msg)
+>>>>>>> origin/master
 {
     // stretch, rotation, and height (aka: r, theta, z)
     char s[8];
@@ -117,7 +171,16 @@ void cyl_position_write_callback(const geometry_msgs::Point& msg_in)
 }
 
 
+<<<<<<< HEAD
 void vector_write_callback(const geometry_msgs::Vector3& msg_in)
+=======
+/* 
+ * Description: callback when receive data from pnr_ros_base_status_topic
+ * Inputs:      msg(uint8)          status of gripper: attach if 1; detach if 0
+ * Outputs:     Gcode               send gcode to control swift pro
+ */
+void swiftpro_status_callback(const pnr_ros_base::status& msg)
+>>>>>>> origin/master
 {
     if (accept_vector)
     {
@@ -181,7 +244,16 @@ void cyl_vector_write_callback(const geometry_msgs::Vector3& msg_in)
 }
 
 
+<<<<<<< HEAD
 void actuator_write_callback(const std_msgs::Bool& msg_in)
+=======
+/* 
+ * Description: callback when receive data from gripper_topic
+ * Inputs:      msg(uint8)          status of gripper: work if 1; otherwise 0
+ * Outputs:     Gcode               send gcode to control swift pro
+ */
+void gripper_callback(const pnr_ros_base::status& msg)
+>>>>>>> origin/master
 {
     us_actuator_on.data = msg_in.data;
 
@@ -211,7 +283,11 @@ void actuator_write_callback(const std_msgs::Bool& msg_in)
 /**
  * TODO: Document this confusing document (lol) 
  */
+<<<<<<< HEAD
 void state_read_callback(const ros::TimerEvent&)
+=======
+void pump_callback(const pnr_ros_base::status& msg)
+>>>>>>> origin/master
 {
     // I'm not sure if it's possible to get the state of 
     // all the joints from the uSwift, so for now, we'll just
@@ -304,6 +380,7 @@ int main(int argc, char** argv)
 {
     ros::init(argc, argv, "pnr_swiftpro_node");
     ros::NodeHandle nh;
+<<<<<<< HEAD
 
     // set defaults for the messages
     us_actuator_on.data = false;
@@ -326,6 +403,18 @@ int main(int argc, char** argv)
         nh.subscribe("uswift_cyl_vector_write", 1, cyl_vector_write_callback);
     ros::Subscriber atr_sub = 
         nh.subscribe("uswift_actuator_write", 1, actuator_write_callback);
+=======
+    pnr_ros_base::SwiftproState swiftpro_state;
+
+    ros::Subscriber tsub = nh.subscribe("cmd_vel", 1, t_vector_callback);
+    // ros::Subscriber tsub = nh.subscribe("teleop_vector_topic", 1, t_vector_callback);
+    ros::Subscriber sub1 = nh.subscribe("position_write_topic", 1, position_write_callback);
+    ros::Subscriber sub2 = nh.subscribe("swiftpro_status_topic", 1, swiftpro_status_callback);
+    ros::Subscriber sub3 = nh.subscribe("angle4th_topic", 1, angle4th_callback);
+    ros::Subscriber sub4 = nh.subscribe("gripper_topic", 1, gripper_callback);
+    ros::Subscriber sub5 = nh.subscribe("pump_topic", 1, pump_callback);
+    ros::Subscriber possub = nh.subscribe("SwiftproState_topic", 1, position_read_callback);
+>>>>>>> origin/master
     // ros::Rate loop_rate(20);
 
     ros::Duration(3.5).sleep();  // wait 3.5s (???)

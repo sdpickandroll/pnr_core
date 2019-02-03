@@ -220,7 +220,7 @@ target_link_libraries(arm_teleop_node ${catkin_LIBRARIES})
 ## Add folders to be run by python nosetests
 # catkin_add_nosetests(test)
 
-include_directories(include/pnr-ros-base)
+include_directories(include/pnr_ros_base)
 #add_library(MyRobot src/MyRobot.cpp)
 #add_executable(MyRobot src/MyRobot.cpp)
 #target_link_libraries(MyRobot ${catkin_LIBRARIES})

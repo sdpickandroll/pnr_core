@@ -14,7 +14,11 @@
 #include <ros/ros.h>
 #include <serial/serial.h>
 #include <std_msgs/String.h>
+<<<<<<< HEAD
 // #include <swiftpro/SwiftproState.h>
+=======
+#include <pnr_ros_base/SwiftproState.h>
+>>>>>>> origin/master
 
 #include <exception>
 #include <string>
@@ -29,7 +33,7 @@
 serial::Serial _serial; // serial object
 
 
-void processstr(swiftpro::SwiftproState* state, std::string data)
+void processstr(pnr_ros_base::SwiftproState* state, std::string data)
 {
     char str[2048];
     strcpy(str, data.c_str());
@@ -92,10 +96,10 @@ int main(int argc, char** argv)
 {   
     ros::init(argc, argv, "swiftpro_read_node");
     ros::NodeHandle nh;
-    swiftpro::SwiftproState swiftpro_state;
+    pnr_ros_base::SwiftproState swiftpro_state;
     std::string result;
 
-    ros::Publisher pub = nh.advertise<swiftpro::SwiftproState>("SwiftproState_topic", 1);
+    ros::Publisher pub = nh.advertise<pnr_ros_base::SwiftproState>("SwiftproState_topic", 1);
     ros::Rate loop_rate(5);
 
     try
