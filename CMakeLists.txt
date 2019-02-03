@@ -136,12 +136,8 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-# add_executable(${PROJECT_NAME}_node src/swiftpro_node.cpp)
 add_executable(swiftpro_write_node src/swiftpro_write_node.cpp)
-#add_executable(swiftpro_moveit_node src/swiftpro_moveit_node.cpp)
-#add_executable(swiftpro_rviz_node src/swiftpro_rviz_node.cpp)
-#add_executable(swiftpro_read_node src/swiftpro_read_node.cpp)
-add_executable(arm_teleop_node src/arm_teleop_node.cpp)
+add_executable(pnr_ros_base_node src/pnr_ros_base.cpp)
 
 ## Rename C++ executable without prefix
 ## The above recommended prefix causes long target names, the following renames the
@@ -160,17 +156,14 @@ add_dependencies(swiftpro_write_node pnr_ros_base_generate_messages_cpp)
 #add_dependencies(swiftpro_moveit_node pnr_ros_base_generate_messages_cpp)
 #add_dependencies(swiftpro_rviz_node pnr_ros_base_generate_messages_cpp)
 #add_dependencies(swiftpro_read_node pnr_ros_base_generate_messages_cpp)
-add_dependencies(arm_teleop_node pnr_ros_base_generate_messages_cpp)
+add_dependencies(pnr_ros_base_node pnr_ros_base_generate_messages_cpp)
 
 ## Specify libraries to link a library or executable target against
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
 target_link_libraries(swiftpro_write_node ${catkin_LIBRARIES})
-#target_link_libraries(swiftpro_moveit_node ${catkin_LIBRARIES})
-#target_link_libraries(swiftpro_rviz_node ${catkin_LIBRARIES})
-#target_link_libraries(swiftpro_read_node ${catkin_LIBRARIES})
-target_link_libraries(arm_teleop_node ${catkin_LIBRARIES})
+target_link_libraries(pnr_ros_base_node ${catkin_LIBRARIES})
 
 #############
 ## Install ##
