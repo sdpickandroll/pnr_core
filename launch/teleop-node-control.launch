@@ -1,8 +1,0 @@
-<launch>
-	<!-- <param name="use_gui" value="False" /> -->
-	<node name="pnr_ros_base_node" pkg="pnr_ros_base" type="pnr_ros_base_node" />
-	<node name="swiftpro_write_node" pkg="pnr_ros_base" type="swiftpro_write_node" />
-	<node pkg="teleop_twist_keyboard" name="teleop_controller" type="teleop_twist_keyboard.py" output="screen">
-		<param name="speed" value="1.0" />
-	</node>
-</launch>

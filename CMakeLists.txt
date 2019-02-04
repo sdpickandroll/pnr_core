@@ -136,7 +136,7 @@ include_directories(
 ## Declare a C++ executable
 ## With catkin_make all packages are built within a single CMake context
 ## The recommended prefix ensures that target names across packages don't collide
-add_executable(swiftpro_write_node src/swiftpro_write_node.cpp)
+add_executable(pnr_swiftpro_node src/swiftpro_node.cpp)
 add_executable(pnr_ros_base_node src/pnr_ros_base.cpp)
 
 ## Rename C++ executable without prefix
@@ -144,7 +144,7 @@ add_executable(pnr_ros_base_node src/pnr_ros_base.cpp)
 ## target back to the shorter version for ease of user use
 ## e.g. "rosrun someones_pkg node" instead of "rosrun someones_pkg someones_pkg_node"
 # set_target_properties(${PROJECT_NAME}_node PROPERTIES OUTPUT_NAME node PREFIX "")
-#set_target_properties(swiftpro_write_node PROPERTIES OUTPUT_NAME write PREFIX "")
+#set_target_properties(pnr_swiftpro_node PROPERTIES OUTPUT_NAME write PREFIX "")
 #set_target_properties(swiftpro_moveit_node PROPERTIES OUTPUT_NAME moveit PREFIX "")
 #set_target_properties(swiftpro_rviz_node PROPERTIES OUTPUT_NAME rviz PREFIX "")
 #set_target_properties(swiftpro_read_node PROPERTIES OUTPUT_NAME read PREFIX "")
@@ -152,7 +152,7 @@ add_executable(pnr_ros_base_node src/pnr_ros_base.cpp)
 ## Add cmake target dependencies of the executable
 ## same as for the library above
 # add_dependencies(${PROJECT_NAME}_node ${${PROJECT_NAME}_EXPORTED_TARGETS} ${catkin_EXPORTED_TARGETS})
-add_dependencies(swiftpro_write_node pnr_ros_base_generate_messages_cpp)
+add_dependencies(pnr_swiftpro_node pnr_ros_base_generate_messages_cpp)
 #add_dependencies(swiftpro_moveit_node pnr_ros_base_generate_messages_cpp)
 #add_dependencies(swiftpro_rviz_node pnr_ros_base_generate_messages_cpp)
 #add_dependencies(swiftpro_read_node pnr_ros_base_generate_messages_cpp)
@@ -162,7 +162,7 @@ add_dependencies(pnr_ros_base_node pnr_ros_base_generate_messages_cpp)
 # target_link_libraries(${PROJECT_NAME}_node
 #   ${catkin_LIBRARIES}
 # )
-target_link_libraries(swiftpro_write_node ${catkin_LIBRARIES})
+target_link_libraries(pnr_swiftpro_node ${catkin_LIBRARIES})
 target_link_libraries(pnr_ros_base_node ${catkin_LIBRARIES})
 
 #############

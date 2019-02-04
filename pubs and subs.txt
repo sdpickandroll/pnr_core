@@ -1,18 +1,60 @@
 
-A record of the publishers and subscribers that pnr_ros_base has to offer
+
+A record of all the topics, parameters, and services in pnr_ros_base...
 
 
 
-__uSwift__
+__uSwift__ (swiftpro_node.cpp => pnr_swiftpro_node)
 
-Publishers:
-- uswift_state (pnr_ros_base::uSwiftState)
-- uswift_position (geometry_msgs::Point)
-- uswift_actuator (std_msgs::Bool)
+Publishes:
+- pnr/uswift_state              (pnr_ros_base::uSwiftState)
+- pnr/uswift_position           (geometry_msgs::Point)
+- pnr/uswift_actuator           (std_msgs::Bool)
 
 Subscribes to:
-- uswift_position_write (geometry_msgs::Point)
-- uswift_cyl_position_write (geometry_msgs::Point)
-- uswift_vector_write (geometry_msgs::Vector3)
-- uswift_cyl_vector_write (geometry_msgs::Vector3)
-- uswift_actuator_write (std_msgs::Bool)
+- pnr/uswift_position_write     (geometry_msgs::Point)
+- pnr/uswift_cyl_position_write (geometry_msgs::Point)
+- pnr/uswift_vector_write       (geometry_msgs::Vector3)
+- pnr/uswift_cyl_vector_write   (geometry_msgs::Vector3)
+- pnr/uswift_actuator_write     (std_msgs::Bool)
+
+
+
+__PNR ROS hub__ (pnr_ros_base.cpp => pnr_ros_base)
+
+Publishes:
+- pnr/uswift_vector_write       (geometry_msgs::Vector3)
+- pnr/uswift_actuator_write     (std_msgs::Bool)
+- cmd_vel                       (geometry_msgs::Twist)
+
+Subscribes to:
+- 
+
+Accepts parameters:
+- pnr/
+
+
+
+__3Dconnexions 3D mouse__ (external library; http://wiki.ros.org/spacenav_node)
+
+Publishes:
+- spacenav/offset               (geometry_msgs::Vector3)
+- spacenav/rot_offset           (geometry_msgs::Vector3)
+- spacenav/twist                (geometry_msgs::Twist)
+- spacenav/joy                  (sensor_msgs::Joy)
+
+
+
+__Roomba__ (external library; http://wiki.ros.org/create_autonomy)
+
+Publishes (of note):
+- mode                          (ca_msgs::Mode)
+- 
+
+Subscribes to (of note):
+- cmd_vel                       (geometry_msgs::Twist)
+
+
+Accepts parameters (of note):
+- dev                           (string)
+    > Name of the serial port connecting to the Roomba

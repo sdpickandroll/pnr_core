@@ -35,14 +35,17 @@
 
 // Too many vector commands will flood the uSwift.
 // This variable is set to 'true' every flood_secs seconds.
+// TODO: ROS parameterize
 bool accept_vector = true;
 double flood_secs = 0.05;
 
 // how fast the move commands are executed on the uSwift
 // (10000 is fastest)
+// TODO: ROS parameterize
 int move_speed = 10000;
 
 // time between how often this node publishes a new state (secs)
+// TODO: ROS parameterize
 double pos_update_secs = 0.05;
 
 // publishing clearence, true => ready to publish new state

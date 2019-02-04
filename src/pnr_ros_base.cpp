@@ -3,9 +3,9 @@
  * do whatever teh crap you want with this software
  * just mention my name if you use it, bitte
  *
- * This node serves only to forward the cmd_vel publisher to the
- * uswift_vector_write topic. It does so by simply setting the Vector3
- * to the Vector3 Twist.linear.
+ * This node serves only to deconstruct and forward messages to their
+ * necessary locations, such as the cmd_vel publisher to the
+ * uswift_vector_write topic. 
  *
  * In the future, it will serve as the resource and message manager for
  * the project.
@@ -17,7 +17,7 @@
 
 #include <ros/ros.h>
 #include <ros/console.h>
-#include <serial/serial.h>
+// #include <serial/serial.h>
 
 // #include <std_msgs/Bool.h> // ?
 // #include <std_msgs/String.h>
@@ -33,6 +33,7 @@ bool update_cmd_vel = false;
 geometry_msgs::Vector3 vector_out;
 
 // ******
+// TODO: ROS parameterize
 double scale = 5.0; // test to see what is best
 // ******
 
