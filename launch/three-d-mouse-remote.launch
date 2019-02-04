@@ -10,9 +10,19 @@
 
 <?xml version="1.0"?>
 <launch>
- <node pkg="spacenav_node" type="spacenav_node" name="$(anon spacenav_node)" output="screen">
-  <rosparam param="linear_scale">[10.0, 10.0, 5.0]</rosparam>
-  <rosparam param="angular_scale">[0, 0, 0]</rosparam>
- </node>
+
+ <node pkg="spacenav_node" type="spacenav_node" name="$(anon spacenav_node)" output="screen" />
+
  <node pkg="swiftpro" type="pnr_swiftpro_node" name="$(anon swiftpro)" output="screen" />
+
+ 
+
+
+ <!-- The teleop keyboard node is included here for future debugging -->
+ <!-- 
+ <node pkg="teleop_twist_keyboard" name="teleop_controller" type="teleop_twist_keyboard.py" output="screen">
+  <remap from="cmd_vel" to="teleop_keyboard/twist" />
+  <param name="speed" value="1.0" />
+ </node>
+ -->
 </launch>

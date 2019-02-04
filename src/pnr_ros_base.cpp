@@ -5,7 +5,8 @@
  *
  * This node serves only to deconstruct and forward messages to their
  * necessary locations, such as the cmd_vel publisher to the
- * uswift_vector_write topic. 
+ * uswift_vector_write topic. Therefore, this node runs on the 
+ * Raspberry Pi.
  *
  * In the future, it will serve as the resource and message manager for
  * the project.
@@ -29,21 +30,21 @@
 #include <pnr_ros_base/uSwiftState.h>
 
 // marker to update the vector command
-bool update_cmd_vel = false;
-geometry_msgs::Vector3 vector_out;
+bool update_uswift_vector = false;
+geometry_msgs::Vector3 uswift_vector_out;
 
 // ******
 // TODO: ROS parameterize
 double scale = 5.0; // test to see what is best
 // ******
 
-void cmd_vel_callback(const geometry_msgs::Twist& msg_in)
+void keyboard_teleop_callback(const geometry_msgs::Twist& msg_in)
 {
   vector_out.x = scale * msg_in.linear.x;
   vector_out.y = scale * msg_in.linear.y;
   vector_out.z = scale * msg_in.linear.z;
 
-  update_cmd_vel = true;
+  update_uswift_vector = true;
 }
 
 
@@ -54,17 +55,18 @@ int main(int argc, char** argv)
   ros::NodeHandle nh;
 
   // write to pnr/uswift_vector_write
-  ros::Publisher vector_writer
-        = nh.advertise<geometry_msgs::Vector3>("pnr/uswift_vector_write", 1);
+  ros::Publisher uswift_vector_writer
+      = nh.advertise<geometry_msgs::Vector3>("pnr/uswift_vector_write", 1);
 
-  ros::Subscriber cmd_vel = nh.subscribe("cmd_vel", 1, cmd_vel_callback);
+  ros::Subscriber cmd_vel
+      = nh.subscribe("teleop_keyboard/twist", 1, keyboard_teleop_callback);
 
 
   while (ros::ok())
   {
-    if (update_cmd_vel) {
-      vector_writer.publish(vector_out);
-      update_cmd_vel = false;
+    if (update_uswift_vector) {
+      uswift_vector_writer.publish(uswift_vector_out);
+      update_uswift_vector = false;
     }
 
     ros::spinOnce();
