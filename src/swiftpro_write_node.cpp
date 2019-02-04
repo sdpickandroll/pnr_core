@@ -1,4 +1,4 @@
-/* 
+/*
  * Software License Agreement:
  * do whatever teh crap you want with this software
  * just mention my name if you use it, bitte
@@ -188,7 +188,7 @@ void actuator_write_callback(const std_msgs::Bool& msg_in)
     // TODO:
     // Not sure if this should be M2231 or M2232...
     // Depends on whether we have the suction or the gripper installed
-    std::string Gcode = "M2231 ";
+    std::string Gcode = "M2232 ";
     if (us_actuator_on.data)
         Gcode += "V1";
     else
@@ -223,7 +223,7 @@ void state_read_callback(const ros::TimerEvent&)
     // data = usb->read(usb->available());
     // ROS_INFO_STREAM("Read from USB: " << data);
 
-    char str[200];
+    char str[400];
     strcpy(str, data.c_str());
     char* pch = strtok(str, " ");
     float x, y, z, r;
@@ -358,7 +358,7 @@ int main(int argc, char** argv)
         ROS_INFO("uSwift startup message: \n%s", result.c_str());
 
         ros::Duration(0.5).sleep();       // wait 0.5s
-        usb->write("G0 X86.8411 Y-0.1332 Z33.6395 F1000\n"); // move to the uncalibrated "home" position
+        usb->write("G0 X50 Y0 Z50 F1000\n"); // move to the uncalibrated "home" position
                                           // TODO: Learn how to calibrate this mugger
                                           // Maybe have a command that sets home position??
         ros::Duration(0.01).sleep();      // wait 0.01s
@@ -366,7 +366,7 @@ int main(int argc, char** argv)
         if (result[0] == 'E')
         {
             ROS_WARN("Received error from uSwift after the command %s:\n"
-                "%s", "G0 X86.8411 Y-0.1332 Z33.6395 F1000\n", result.c_str());
+                "%s", "G0 X50 Y0 Z50\n", result.c_str());
         }
 
         ros::Duration(0.1).sleep();     // wait 0.1s
