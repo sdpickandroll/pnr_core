@@ -33,7 +33,7 @@
 // Parameters
 // *********************
 
-// double on "/pnr_core/uswift_vector_scale"
+// /pnr_core/uswift_vector_scale
 double uswift_vector_scale;
 
 
@@ -89,7 +89,7 @@ int main(int argc, char** argv)
   while (ros::ok())
   {
     // update parameters
-    nh.param<double>("/pnr_core/uswift_vector_scale", uswift_vector_scale, 1.0);
+    nh.param<double>("uswift_vector_scale", uswift_vector_scale, 1.0);
     
     if (update_uswift_vector)
     {
