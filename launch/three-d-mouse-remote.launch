@@ -1,28 +1,26 @@
-
+<?xml version="1.0"?>
 
 <!-- This launch file is for controlling the Roomba and the uSwift arm with the 3Dconnexion 
-     3D mouse. This session should be launched from the Raspberry Pi. -->
+     3D mouse. This launch session should be launched from the Raspberry Pi. -->
 <!-- The corresponding launch file on the Jetson is 'accept-commands.launch'. 
      It is so called because with it, the Jetson only accepts incoming vector and Twist messages
      coming to the 'uswift_vector_write' and 'cmd_vel' topics, respectively. -->
 
 <!-- Written by Joshua Petrin -->
 
-<?xml version="1.0"?>
 <launch>
 
  <node pkg="spacenav_node" type="spacenav_node" name="$(anon spacenav_node)" output="screen" />
 
- <node pkg="swiftpro" type="pnr_swiftpro_node" name="$(anon swiftpro)" output="screen" />
-
- 
-
+ <node pkg="pnr_core" type="pnr_core_node" name="pnr_core_node" output="screen">
+  <param name="uswift_vector_scale" type="double" value="2.0" />
+ </node>
 
  <!-- The teleop keyboard node is included here for future debugging -->
- <!-- 
- <node pkg="teleop_twist_keyboard" name="teleop_controller" type="teleop_twist_keyboard.py" output="screen">
+ 
+ <!-- <node pkg="teleop_twist_keyboard" name="teleop_controller" type="teleop_twist_keyboard.py" output="screen">
   <remap from="cmd_vel" to="teleop_keyboard/twist" />
   <param name="speed" value="1.0" />
- </node>
- -->
+ </node> -->
+
 </launch>

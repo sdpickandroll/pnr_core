@@ -4,57 +4,63 @@ A record of all the topics, parameters, and services in pnr_ros_base...
 
 
 
-__uSwift__ (swiftpro_node.cpp => pnr_swiftpro_node)
+__uSwift__ (swiftpro_node.cpp => pnr_swiftpro)
 
 Publishes:
-- pnr/uswift_state              (pnr_ros_base::uSwiftState)
-- pnr/uswift_position           (geometry_msgs::Point)
-- pnr/uswift_actuator           (std_msgs::Bool)
+- pnr_swiftpro/state                (pnr_ros_base::uSwiftState)
+- pnr_swiftpro/position             (geometry_msgs::Point)
+- pnr_swiftpro/actuator             (std_msgs::Bool)
 
 Subscribes to:
-- pnr/uswift_position_write     (geometry_msgs::Point)
-- pnr/uswift_cyl_position_write (geometry_msgs::Point)
-- pnr/uswift_vector_write       (geometry_msgs::Vector3)
-- pnr/uswift_cyl_vector_write   (geometry_msgs::Vector3)
-- pnr/uswift_actuator_write     (std_msgs::Bool)
+- pnr_swiftpro/position_write       (geometry_msgs::Point)
+- pnr_swiftpro/cyl_position_write   (geometry_msgs::Point)
+- pnr_swiftpro/vector_write         (geometry_msgs::Vector3)
+- pnr_swiftpro/cyl_vector_write     (geometry_msgs::Vector3)
+- pnr_swiftpro/actuator_write       (std_msgs::Bool)
+
+Accepts parameters:
+- pnr_swiftpro/port                 (str)
+- pnr_swiftpro/move_speed           (int)
+- pnr_swiftpro/pose_update_delay    (double)
+- pnr_swiftpro/vector_flood_delay   (double)
 
 
 
 __PNR ROS hub__ (pnr_ros_base.cpp => pnr_ros_base)
 
 Publishes:
-- pnr/uswift_vector_write       (geometry_msgs::Vector3)
-- pnr/uswift_actuator_write     (std_msgs::Bool)
-- cmd_vel                       (geometry_msgs::Twist)
+- pnr_swiftpro/vector_write         (geometry_msgs::Vector3)
+- pnr_swiftpro/actuator_write       (std_msgs::Bool)
+- cmd_vel                           (geometry_msgs::Twist)
 
 Subscribes to:
 - 
 
 Accepts parameters:
-- pnr/
+- pnr_swiftpro/vector_scale         (double)
 
 
 
 __3Dconnexions 3D mouse__ (external library; http://wiki.ros.org/spacenav_node)
 
 Publishes:
-- spacenav/offset               (geometry_msgs::Vector3)
-- spacenav/rot_offset           (geometry_msgs::Vector3)
-- spacenav/twist                (geometry_msgs::Twist)
-- spacenav/joy                  (sensor_msgs::Joy)
+- spacenav/offset                   (geometry_msgs::Vector3)
+- spacenav/rot_offset               (geometry_msgs::Vector3)
+- spacenav/twist                    (geometry_msgs::Twist)
+- spacenav/joy                      (sensor_msgs::Joy)
 
 
 
 __Roomba__ (external library; http://wiki.ros.org/create_autonomy)
 
 Publishes (of note):
-- mode                          (ca_msgs::Mode)
+- mode                              (ca_msgs::Mode)
 - 
 
 Subscribes to (of note):
-- cmd_vel                       (geometry_msgs::Twist)
+- cmd_vel                           (geometry_msgs::Twist)
 
 
 Accepts parameters (of note):
-- dev                           (string)
+- dev                               (string)
     > Name of the serial port connecting to the Roomba
