@@ -26,7 +26,7 @@ Accepts parameters:
 
 
 
-__PNR ROS hub__ (pnr_ros_base.cpp => pnr_ros_base)
+__PNR ROS hub__ (pnr_core.py)
 
 Publishes:
 - pnr_swiftpro/vector_write         (geometry_msgs::Vector3)
