@@ -39,7 +39,7 @@ update_uswift_actuator = False
 
 # roomba cmd_vel
 cmd_vel = Twist(Vector3(0.0,0.0,0.0), Vector3(0.0,0.0,0.0))
-update_cmd_vel = False
+update_cmd_vel = True
 
 # spacenav button globals
 spacenav_b0_pressed = False
@@ -51,7 +51,6 @@ spacenav_b1_pressed = False
 
 def keyboard_teleop_callback(twist):
     global uswift_vector_out
-    global uswift_vector_scale
     global update_uswift_vector
 
     uswift_vector_out.x = uswift_vector_scale * twist.linear.x
@@ -82,15 +81,20 @@ def spacenav_joy_callback(joy):
     # but for now, we're just using the buttons.
     if joy.buttons[0] and not spacenav_b0_pressed:
         # flip control between the roomba and the arm
-        rospy.loginfo('Flipping control!')
         control_roomba = not control_roomba
         spacenav_b0_pressed = True
+        if control_roomba:
+            rospy.loginfo('Changing control to Roomba.')
+        else:
+            rospy.loginfo('Changing control to uArm.')
+
 
     if joy.buttons[1] and not spacenav_b1_pressed:
         # toggle the actuator
         uswift_actuator_out.data = not uswift_actuator_out.data
         update_uswift_actuator = True
         spacenav_b1_pressed = True
+        rospy.loginfo('Toggling actuator.')
 
     if not joy.buttons[0] and spacenav_b0_pressed:
         # might have to create a threshold for bouncing
@@ -102,8 +106,6 @@ def spacenav_joy_callback(joy):
 
 
 def spacenav_twist_callback(twist):
-    global roomba_vector_scale
-    global roomba_angular_scale
     global cmd_vel
     global update_cmd_vel
 
@@ -129,15 +131,9 @@ def pnr_core():
     global uswift_vector_scale
     global roomba_vector_scale
     global roomba_angular_scale
-    global control_roomba
-    global uswift_vector_out
     global update_uswift_vector
-    global uswift_actuator_out
     global update_uswift_actuator
-    global cmd_vel
     global update_cmd_vel
-    global spacenav_b0_pressed
-    global spacenav_b1_pressed
 
     # publishers
     uswift_vector_write = rospy.Publisher(
