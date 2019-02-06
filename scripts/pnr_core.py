@@ -48,17 +48,17 @@ def keyboard_teleop_callback(twist):
     global uswift_vector_out
     global uswift_vector_scale
 
-    # update rosparam uswift_vector_scale
-    if rospy.has_param('uswift_vector_scale'):
-        uswift_vector_scale = rospy.get_param('uswift_vector_scale')
-
-    if update_uswift_vector and not control_roomba:
+    if not control_roomba:
+        # update rosparam uswift_vector_scale
+        if rospy.has_param('/pnr_core/uswift_vector_scale'):
+            uswift_vector_scale = rospy.get_param('/pnr_core/uswift_vector_scale')
+        
         uswift_vector_out.x = uswift_vector_scale * twist.linear.x
         uswift_vector_out.y = uswift_vector_scale * twist.linear.y
         uswift_vector_out.z = uswift_vector_scale * twist.linear.z
 
         uswift_vector_write.publish(uswift_vector_out)
-        rospy.loginfo('Publishing a uSwift vector')
+        # rospy.loginfo('Publishing a uSwift vector')
 
 
 def actuator_write_callback(state):
@@ -93,7 +93,8 @@ def spacenav_joy_callback(joy):
 
     if joy.buttons[1] and not spacenav_b1_pressed and not control_roomba:
         # toggle the actuator
-        uswift_actuator_out.data = not uswift_actuator_out.data
+        spacenav_b1_pressed = True
+        actuator_write_callback(Bool(not uswift_actuator_out.data))
         rospy.loginfo('Toggling actuator.')
 
     if not joy.buttons[0] and spacenav_b0_pressed:
@@ -112,11 +113,11 @@ def spacenav_twist_callback(twist):
     global roomba_angular_scale
 
     if control_roomba:
-        if rospy.has_param('roomba_vector_scale'):
-            roomba_vector_scale = rospy.get_param('roomba_vector_scale')
+        if rospy.has_param('/pnr_core/roomba_vector_scale'):
+            roomba_vector_scale = rospy.get_param('/pnr_core/roomba_vector_scale')
 
-        if rospy.has_param('roomba_angular_scale'):
-            roomba_angular_scale = rospy.get_param('roomba_angular_scale')
+        if rospy.has_param('/pnr_core/roomba_angular_scale'):
+            roomba_angular_scale = rospy.get_param('/pnr_core/roomba_vector_scale')
 
         cmd_vel.linear.x = roomba_vector_scale * twist.linear.x
         cmd_vel.linear.y = roomba_vector_scale * twist.linear.y
@@ -126,7 +127,7 @@ def spacenav_twist_callback(twist):
         cmd_vel.angular.z = roomba_angular_scale * twist.angular.z
         
         roomba_twist_write.publish(cmd_vel)
-        rospy.loginfo('Publishing a cmd_vel')
+        # rospy.loginfo('Publishing a cmd_vel')
 
     else:
         # this is the equivalent of sending a uarm message

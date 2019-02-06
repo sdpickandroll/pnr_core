@@ -12,8 +12,10 @@
 
  <node pkg="spacenav_node" type="spacenav_node" name="$(anon spacenav_node)" output="screen" />
 
- <node pkg="pnr_core" type="pnr_core_node" name="pnr_core_node" output="screen">
+ <node pkg="pnr_core" type="pnr_core.py" name="pnr_core_node" output="screen">
   <param name="uswift_vector_scale" type="double" value="2.0" />
+  <param name="roomba_vector_scale" type="double" value="1.0" />
+  <param name="roomba_angular_scale" type="double" value="0.5" />
  </node>
 
  <!-- The teleop keyboard node is included here for future debugging -->
@@ -22,5 +24,15 @@
   <remap from="cmd_vel" to="teleop_keyboard/twist" />
   <param name="speed" value="1.0" />
  </node> -->
+
+
+ <!-- This group defines the operations performed remotely on the Jetson. -->
+ <group>
+  <machine name="jetson" address="192.168.1.5" user="nvidia" env-loader="~/catkin_ws/src/pnr_swiftpro/env/remote.sh" default="true" timeout="5.0" />
+  <!-- Start the Roomba node -->
+  <include file="$(find ca_driver)/launch/create_2.launch" />
+  <!-- Start the uSwift -->
+  <node name="$(anon pnr_swiftpro)" pkg="pnr_swiftpro" type="pnr_swiftpro" output="screen" />
+ </group>
 
 </launch>
