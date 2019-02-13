@@ -14,6 +14,18 @@ from geometry_msgs.msg import Twist
 from sensor_msgs.msg import Joy
 
 
+
+## Parameters
+# /pnr_core/uswift_vector_scale
+uswift_vector_scale = 25.0
+
+# /pnr_core/roomba_vector_scale
+roomba_vector_scale = 0.5
+
+# /pnr_core/roomba_angular_scale
+roomba_angular_scale = 0.5
+
+
 ## Publishers 
 # (we put these declarations here to make them global)
 uswift_vector_write = 0
@@ -48,17 +60,17 @@ def keyboard_teleop_callback(twist):
     global uswift_vector_out
     global uswift_vector_scale
 
-    if not control_roomba:
-        # update rosparam uswift_vector_scale
-        if rospy.has_param('/pnr_core/uswift_vector_scale'):
-            uswift_vector_scale = rospy.get_param('/pnr_core/uswift_vector_scale')
-        
-        uswift_vector_out.x = uswift_vector_scale * twist.linear.x
-        uswift_vector_out.y = uswift_vector_scale * twist.linear.y
-        uswift_vector_out.z = uswift_vector_scale * twist.linear.z
+    # rospy.loginfo('Publishing a uSwift vector')
+    
+    # update rosparam uswift_vector_scale
+    if rospy.has_param('/pnr_core/uswift_vector_scale'):
+        uswift_vector_scale = rospy.get_param('/pnr_core/uswift_vector_scale')
+    
+    uswift_vector_out.x = uswift_vector_scale * twist.linear.x
+    uswift_vector_out.y = uswift_vector_scale * twist.linear.y
+    uswift_vector_out.z = uswift_vector_scale * twist.linear.z
 
-        uswift_vector_write.publish(uswift_vector_out)
-        # rospy.loginfo('Publishing a uSwift vector')
+    uswift_vector_write.publish(uswift_vector_out)
 
 
 def actuator_write_callback(state):
@@ -95,7 +107,6 @@ def spacenav_joy_callback(joy):
         # toggle the actuator
         spacenav_b1_pressed = True
         actuator_write_callback(Bool(not uswift_actuator_out.data))
-        rospy.loginfo('Toggling actuator.')
 
     if not joy.buttons[0] and spacenav_b0_pressed:
         # might have to create a threshold for bouncing
@@ -134,17 +145,9 @@ def spacenav_twist_callback(twist):
         keyboard_teleop_callback(twist)
 
 
-## Parameters
-# /pnr_core/uswift_vector_scale
-uswift_vector_scale = 1.0
 
-# /pnr_core/roomba_vector_scale
-roomba_vector_scale = 1.0
-
-# /pnr_core/roomba_angular_scale
-roomba_angular_scale = 0.5
-
-
+#
+#
 # pnr_core
 # 
 def pnr_core():
@@ -209,7 +212,7 @@ def pnr_core():
             uswift_vector_scale)
         rospy.set_param('/pnr_core/uswift_vector_scale', uswift_vector_scale)
     else:
-        uswift_vector_scale = rospy.get_param('uswift_vector_scale')
+        uswift_vector_scale = rospy.get_param('/pnr_core/uswift_vector_scale')
 
     if not rospy.has_param('/pnr_core/roomba_vector_scale'):
         rospy.logwarn('rosparam "/pnr_core/roomba_vector_scale" not found.')
@@ -218,7 +221,7 @@ def pnr_core():
             roomba_vector_scale)
         rospy.set_param('/pnr_core/roomba_vector_scale', roomba_vector_scale)
     else:
-        roomba_vector_scale = rospy.get_param('roomba_vector_scale')
+        roomba_vector_scale = rospy.get_param('/pnr_core/roomba_vector_scale')
 
     if not rospy.has_param('/pnr_core/roomba_angular_scale'):
         rospy.logwarn('rosparam "/pnr_core/roomba_angular_scale" not found.')
@@ -227,7 +230,7 @@ def pnr_core():
             roomba_angular_scale)
         rospy.set_param('/pnr_core/roomba_angular_scale', roomba_angular_scale)
     else:
-        roomba_angular_scale = rospy.get_param('roomba_angular_scale')
+        roomba_angular_scale = rospy.get_param('/pnr_core/roomba_angular_scale')
 
 
     ## Main program loop

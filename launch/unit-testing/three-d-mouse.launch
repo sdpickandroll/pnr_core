@@ -1,9 +1,28 @@
 <?xml version="1.0"?>
 <launch>
- <node pkg="spacenav_node" type="spacenav_node" name="$(anon spacenav_node)" output="screen">
-  <remap from="spacenav/twist" to="cmd_vel" />
-  <rosparam param="linear_scale">[10.0, 10.0, 5.0]</rosparam>
-  <rosparam param="angular_scale">[0, 0, 0]</rosparam>
+ <!-- Comment this out if you don't like the debug messages -->
+ <env name="ROSCONSOLE_CONFIG_FILE" value="$(find pnr_core)/debug_rosconsole.conf"/>
+
+ <param name="/pnr_core/uswift_vector_scale" type="double" value="25.0" />
+ <param name="/pnr_core/roomba_vector_scale" type="double" value="0.5" />
+ <param name="/pnr_core/roomba_angular_scale" type="double" value="0.5" />
+ <node pkg="pnr_core" type="pnr_core.py" name="pnr_core_node" output="screen" />
+ 
+ <node pkg="pnr_swiftpro" type="pnr_swiftpro" name="pnr_swiftpro" output="screen">
+  <param name="port" type="string" value="/dev/ttyACM0" />
+  <param name="move_speed" type="int" value="5000" />
+  <param name="pose_update_period" type="double" value="0.3" /> 
+  <param name="vector_flood_delay" type="double" value="0.2" />
  </node>
- <node pkg="swiftpro" type="swiftpro_write_node" name="$(anon swiftpro)" output="screen" />
+
+ <node pkg="spacenav_node" type="spacenav_node" name="$(anon spacenav_node)" output="screen" />
+  <!-- <remap from="spacenav/twist" to="cmd_vel" /> -->
+  <!-- <rosparam param="linear_scale">[10.0, 10.0, 5.0]</rosparam>
+  <rosparam param="angular_scale">[0, 0, 0]</rosparam> -->
+ <!-- </node> -->
+
 </launch>
+
+
+<!-- WiLl YoU rEaD gArBaGe At ThE eNd Of A fIlE? -->
+

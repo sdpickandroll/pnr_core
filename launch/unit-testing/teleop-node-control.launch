@@ -1,10 +1,16 @@
 <?xml version="1.0"?>
 <launch>
   <!-- <param name="use_gui" value="False" /> -->
-  <node name="pnr_ros_base_node" pkg="pnr_ros_base" type="pnr_ros_base_node" />
-  <node name="pnr_swiftpro_node" pkg="pnr_ros_base" type="pnr_swiftpro_node" />
   <node pkg="teleop_twist_keyboard" name="teleop_controller" type="teleop_twist_keyboard.py" output="screen">
     <remap from="cmd_vel" to="teleop_keyboard/twist" />
     <param name="speed" value="1.0" />
+  </node>
+  
+  <node name="pnr_core_node" pkg="pnr_core" type="pnr_core.py" output="screen" />
+  <node name="pnr_swiftpro_node" pkg="pnr_swiftpro" type="pnr_swiftpro" output="screen">
+  	<param name="port" type="string" value="/dev/ttyACM0" />
+    <param name="move_speed" type="int" value="5000" />
+    <param name="pose_update_period" type="double" value="0.15" />
+    <param name="vector_flood_delay" type="double" value="0.15" />
   </node>
 </launch>
