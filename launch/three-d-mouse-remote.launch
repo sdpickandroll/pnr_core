@@ -14,7 +14,7 @@
 
  <param name="/pnr_core/uswift_vector_scale" type="double" value="25.0" />
  <param name="/pnr_core/roomba_vector_scale" type="double" value="0.5" />
- <param name="/pnr_core/roomba_angular_scale" type="double" value="0.5" />
+ <param name="/pnr_core/roomba_angular_scale" type="double" value="0.75" />
  <node pkg="pnr_core" type="pnr_core.py" name="pnr_core_node" output="screen" />
 
  <!-- The teleop keyboard node is included here for future debugging -->
@@ -34,9 +34,9 @@
   <!-- Start the uSwift -->
   <node name="pnr_swiftpro" pkg="pnr_swiftpro" type="pnr_swiftpro" respawn="true" respawn_delay="3">
    <param name="port" type="string" value="/dev/ttyACM0" />
-   <param name="move_speed" type="int" value="5000" />
+   <param name="move_speed" type="int" value="10000" />
    <param name="pose_update_period" type="double" value="0.3" />
-   <param name="vector_flood_delay" type="double" value="0.2" />
+   <param name="vector_flood_delay" type="double" value="0.1" />
   </node>
  </group>
 
