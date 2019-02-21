@@ -20,10 +20,13 @@ from sensor_msgs.msg import Joy
 uswift_vector_scale = 25.0
 
 # /pnr_core/roomba_vector_scale
-roomba_vector_scale = 0.5
+roomba_vector_scale = 1.0
 
 # /pnr_core/roomba_angular_scale
-roomba_angular_scale = 0.5
+roomba_angular_scale = 1.0
+
+# update period (seconds)
+ROSPARAM_UPDATE_PERIOD = 0.5
 
 
 ## Publishers 
@@ -51,20 +54,31 @@ cmd_vel = Twist()
 spacenav_b0_pressed = False
 spacenav_b1_pressed = False
 
+# xbox controller globals
+xbox_a_pressed = False      # 0
+xbox_b_pressed = False      # 1
+xbox_x_pressed = False      # 2
+xbox_y_pressed = False      # 3
+xbox_lb_pressed = False     # 4
+xbox_rb_pressed = False     # 5
+xbox_back_pressed = False   # 6
+xbox_start_pressed = False  # 7
+xbox_power_pressed = False  # 8
+xbox_lsb_pressed = False    # 9
+xbox_rsb_pressed = False    # 10
+
 
 
 ## Callbacks
 
+# teleop calllback
+# does nothing fancy; just forwards the sparse messages to the uSwift
 def keyboard_teleop_callback(twist):
     global uswift_vector_write
     global uswift_vector_out
     global uswift_vector_scale
 
     # rospy.loginfo('Publishing a uSwift vector')
-    
-    # update rosparam uswift_vector_scale
-    if rospy.has_param('/pnr_core/uswift_vector_scale'):
-        uswift_vector_scale = rospy.get_param('/pnr_core/uswift_vector_scale')
     
     uswift_vector_out.x = uswift_vector_scale * twist.linear.x
     uswift_vector_out.y = uswift_vector_scale * twist.linear.y
@@ -73,16 +87,21 @@ def keyboard_teleop_callback(twist):
     uswift_vector_write.publish(uswift_vector_out)
 
 
+
+# actuator callback
+# this is never actually called by a subscriber, but it is called by several 
+# methods that are.
 def actuator_write_callback(state):
     global uswift_actuator_write
     global uswift_actuator_out
 
     uswift_actuator_out = state
-
     uswift_actuator_write.publish(uswift_actuator_out)
     rospy.loginfo('Toggling the uSwift actuator')
 
 
+
+# joystick callback specific to the spacenav
 def spacenav_joy_callback(joy):
     global actuator_write_callback
     global control_roomba
@@ -117,6 +136,8 @@ def spacenav_joy_callback(joy):
         spacenav_b1_pressed = False
 
 
+
+# spacenav twist callback
 def spacenav_twist_callback(twist):
     global roomba_twist_write
     global cmd_vel
@@ -124,12 +145,6 @@ def spacenav_twist_callback(twist):
     global roomba_angular_scale
 
     if control_roomba:
-        if rospy.has_param('/pnr_core/roomba_vector_scale'):
-            roomba_vector_scale = rospy.get_param('/pnr_core/roomba_vector_scale')
-
-        if rospy.has_param('/pnr_core/roomba_angular_scale'):
-            roomba_angular_scale = rospy.get_param('/pnr_core/roomba_vector_scale')
-
         cmd_vel.linear.x = roomba_vector_scale * twist.linear.x
         cmd_vel.linear.y = roomba_vector_scale * twist.linear.y
         cmd_vel.linear.z = roomba_vector_scale * twist.linear.z
@@ -139,10 +154,65 @@ def spacenav_twist_callback(twist):
         
         roomba_twist_write.publish(cmd_vel)
         # rospy.loginfo('Publishing a cmd_vel')
-
     else:
         # this is the equivalent of sending a uarm message
         keyboard_teleop_callback(twist)
+
+
+
+# generic joystick and controller callback
+def joystick_callback(joy):
+    global roomba_vector_scale
+    global roomba_angular_scale
+    global uswift_vector_scale
+    global roomba_twist_write
+    global uswift_vector_write
+    global actuator_write_callback
+    global uswift_vector_out
+    global cmd_vel
+    global xbox_a_pressed
+
+    # we may have to filter for low-amplitude signals
+    # if the joy library doesn't have a setting for that already
+    cmd_vel.linear.x = roomba_vector_scale * joy.axes[1]
+    cmd_vel.angular.x = roomba_angular_scale * joy.axes[0] # eh one of these will work
+    cmd_vel.angular.y = roomba_angular_scale * joy.axes[0]
+    cmd_vel.angular.z = roomba_angular_scale * joy.axes[0]
+    
+    uswift_vector_out.x = uswift_vector_scale * joy.axes[3]
+    uswift_vector_out.y = uswift_vector_scale * joy.axes[4]
+    uswift_vector_out.z = uswift_vector_scale * (joy.axes[2] - joy.axes[5])  # not sure how I want to do this
+
+    if joy.buttons[0] and not xbox_a_pressed:
+        # toggle the actuator
+        xbox_a_pressed = True
+        actuator_write_callback(Bool(not uswift_actuator_out.data))
+
+    if not joy.buttons[0] and xbox_a_pressed:
+        # might have to create a threshold for bouncing
+        xbox_a_pressed = False
+
+    # rospy.loginfo('Publishing a cmd_vel')
+    roomba_twist_write.publish(cmd_vel)
+    # rospy.loginfo('Publishing a uSwift vector')
+    uswift_vector_write.publish(uswift_vector_out)
+
+
+
+# update rosparams
+# This method is called every 500 milliseconds
+def update_rosparams(event):
+    global uswift_vector_scale
+    global roomba_vector_scale
+    global roomba_angular_scale
+
+    # rospy.loginfo('updating rosparams')
+    if rospy.has_param('/pnr_core/roomba_vector_scale'):
+        roomba_vector_scale = rospy.get_param('/pnr_core/roomba_vector_scale')
+    if rospy.has_param('/pnr_core/roomba_angular_scale'):
+        roomba_angular_scale = rospy.get_param('/pnr_core/roomba_vector_scale')
+    if rospy.has_param('/pnr_core/uswift_vector_scale'):
+        uswift_vector_scale = rospy.get_param('/pnr_core/uswift_vector_scale')
 
 
 
@@ -157,7 +227,6 @@ def pnr_core():
     global uswift_vector_scale
     global roomba_vector_scale
     global roomba_angular_scale
-
 
     ## init rospy node 'pnr_core'
     rospy.init_node('pnr_core')
@@ -199,6 +268,11 @@ def pnr_core():
         Twist,
         spacenav_twist_callback)
 
+    rospy.Subscriber(
+        '/joy',
+        Joy,
+        joystick_callback)
+
 
     ## test for parameters
     #
@@ -235,6 +309,12 @@ def pnr_core():
 
     ## Main program loop
     while not rospy.is_shutdown():
+        # update rosparams every 1000 ms
+        rospy.loginfo('Updating rosparams every %g seconds...',
+            ROSPARAM_UPDATE_PERIOD)
+        rospy.Timer(rospy.Duration(ROSPARAM_UPDATE_PERIOD),
+            update_rosparams)
+
         rospy.loginfo('pnr_core -- Waiting for callbacks...')
         # callbacks run synchronously so long as this node is still alive
         rospy.spin()

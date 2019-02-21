@@ -1,7 +1,7 @@
 <?xml version="1.0"?>
 <launch>
  <!-- Comment this out if you don't like the debug messages -->
- <env name="ROSCONSOLE_CONFIG_FILE" value="$(find pnr_core)/debug_rosconsole.conf"/>
+ <env name="ROSCONSOLE_CONFIG_FILE" value="$(find pnr_core)/rosconsole_debug.conf"/>
 
  <param name="/pnr_core/uswift_vector_scale" type="double" value="25.0" />
  <param name="/pnr_core/roomba_vector_scale" type="double" value="0.5" />

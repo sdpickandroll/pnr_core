@@ -1,0 +1,43 @@
+<?xml version="1.0"?>
+
+<!-- This launch file is for controlling the Roomba and the uSwift arm with the 3Dconnexion 
+     3D mouse. This launch session should be launched from the Raspberry Pi. -->
+<!-- The corresponding launch file on the Jetson is 'accept-commands.launch'. 
+     It is so called because with it, the Jetson only accepts incoming vector and Twist messages
+     coming to the 'uswift_vector_write' and 'cmd_vel' topics, respectively. -->
+
+<!-- Written by Joshua Petrin -->
+
+<launch>
+
+ <node pkg="spacenav_node" type="spacenav_node" name="$(anon spacenav_node)" output="screen" />
+
+ <param name="/pnr_core/uswift_vector_scale" type="double" value="25.0" />
+ <param name="/pnr_core/roomba_vector_scale" type="double" value="0.5" />
+ <param name="/pnr_core/roomba_angular_scale" type="double" value="0.5" />
+ <node pkg="pnr_core" type="pnr_core.py" name="pnr_core_node" output="screen" />
+
+ <!-- The teleop keyboard node is included here for future debugging -->
+ 
+ <!-- <node pkg="teleop_twist_keyboard" name="teleop_controller" type="teleop_twist_keyboard.py" output="screen">
+  <remap from="cmd_vel" to="teleop_keyboard/twist" />
+  <param name="speed" value="1.0" />
+ </node> -->
+
+
+ <!-- This group defines the operations performed remotely on the Jetson. -->
+ <!-- TODO: Find a way to send debug/info/err messages to the console on the host -->
+ <group>
+  <machine name="jetson" address="192.168.1.5" user="nvidia" env-loader="~/catkin_ws/src/pnr_swiftpro/env/remote.sh" default="true" timeout="5.0" />
+  <!-- Start the Roomba node -->
+  <include file="$(find ca_driver)/launch/create_2.launch" />
+  <!-- Start the uSwift -->
+  <node name="pnr_swiftpro" pkg="pnr_swiftpro" type="pnr_swiftpro" output="screen">
+   <param name="port" type="string" value="/dev/ttyACM0" />
+   <param name="move_speed" type="int" value="5000" />
+   <param name="pose_update_period" type="double" value="0.3" />
+   <param name="vector_flood_delay" type="double" value="0.2" />
+  </node>
+ </group>
+
+</launch>
