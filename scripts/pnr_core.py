@@ -2,7 +2,6 @@
 
 import rospy
 
-
 from std_msgs.msg import Bool
 # from std_msgs.msg import String
 # from std_msgs.msg import Empty
@@ -333,9 +332,8 @@ def pnr_core():
             0.2)
         rospy.Timer(rospy.Duration(0.2), open_roomba_vector) # hard-code for now...
 
-
         rospy.loginfo('pnr_core -- Waiting for callbacks...')
-        # callbacks run synchronously so long as this node is still alive
+        # callbacks run automagically so long as this node is still alive
         rospy.spin()
 
 
