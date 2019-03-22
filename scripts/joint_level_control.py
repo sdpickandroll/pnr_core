@@ -10,9 +10,10 @@ from std_msgs.msg import Float64
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Vector3
 from geometry_msgs.msg import Twist
+from sensor_msgs.msg import Joy
 
 
-## Publishers 
+## Publishers
 # (we put these declarations here to make them global)
 joint0_write = 0
 joint1_write = 0
@@ -23,7 +24,7 @@ roomba_twist_write = 0
 
 roomba_vector_scale = 1.0
 roomba_angular_scale = 1.0
-uswift_degree_scale = 3.0
+uswift_degree_scale = 20.0
 
 
 ## Assorted global variables
@@ -81,7 +82,7 @@ def keyboard_teleop_callback(twist):
 
 
 # actuator callback
-# this is never actually called by a subscriber, but it is called by several 
+# this is never actually called by a subscriber, but it is called by several
 # methods that are.
 def actuator_write_callback(state):
     global uswift_actuator_write
@@ -234,11 +235,6 @@ def pnr_core():
         Twist,
         spacenav_twist_callback)
 
-    rospy.Subscriber(
-        '/joy',
-        Joy,
-        joystick_callback)
-
 
     ## test for parameters
     #
@@ -263,6 +259,7 @@ def pnr_core():
     else:
         roomba_angular_scale = rospy.get_param('/pnr_core/roomba_angular_scale')
 
+    ROSPARAM_UPDATE_PERIOD = 0.5
 
     ## Main program loop
     while not rospy.is_shutdown():
