@@ -70,7 +70,7 @@ def keyboard_teleop_callback(twist):
 
     uswift_value_out = Float64(twist.linear.y * uswift_degree_scale)
 
-    rospy.loginfo('Publishing a uSwift vector to joint ' + joint)
+    rospy.loginfo('Publishing a uSwift vector to joint %d' % joint)
     if joint == 0:
         joint0_write.publish(uswift_value_out)
     if joint == 1:
@@ -99,6 +99,7 @@ def spacenav_joy_callback(joy):
     global actuator_write_callback
     global spacenav_b0_pressed
     global spacenav_b1_pressed
+    global joint
 
     # rospy.loginfo('In the spacenav_twist callback')
     # rospy.loginfo('The first button is: %i', int(joy.buttons[0]))
@@ -108,9 +109,10 @@ def spacenav_joy_callback(joy):
     if joy.buttons[0] and not spacenav_b0_pressed:
         spacenav_b0_pressed = True
         joint = 0 if joint >= 5 else joint + 1
-        rospy.loginfo('Switching to joint ' + joint)
+        rospy.loginfo('Switching to joint %d' % joint)
 
-    if joy.buttons[1] and not spacenav_b1_pressed and not control_roomba:
+    if joy.buttons[1] and not spacenav_b1_pressed \
+        and not (joint == 4 or joint == 5):
         # toggle the actuator
         spacenav_b1_pressed = True
         actuator_write_callback(Bool(not uswift_actuator_out.data))
