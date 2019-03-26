@@ -22,8 +22,8 @@ joint3_write = 0
 uswift_actuator_write = 0
 roomba_twist_write = 0
 
-roomba_vector_scale = 1.0
-roomba_angular_scale = 1.0
+roomba_vector_scale = 0.5
+roomba_angular_scale = 1.5
 uswift_degree_scale = 20.0
 
 
@@ -38,10 +38,6 @@ uswift_degree_scale = 20.0
 # 5 => roomba right/left
 joint = 0
 
-
-# roomba flood protection
-send_vector_roomba = True
-flood_vector_roomba_thresh = 0.2
 
 # uswift vector
 uswift_value_out = Float64()
@@ -70,7 +66,8 @@ def keyboard_teleop_callback(twist):
 
     uswift_value_out = Float64(twist.linear.y * uswift_degree_scale)
 
-    rospy.loginfo('Publishing a uSwift vector to joint %d' % joint)
+    # rospy.loginfo('Publishing a uSwift vector to joint %d' % joint)
+    # rospy.loginfo('Angle: %.1f' % uswift_value_out.data)
     if joint == 0:
         joint0_write.publish(uswift_value_out)
     if joint == 1:
@@ -133,20 +130,17 @@ def spacenav_twist_callback(twist):
     global cmd_vel
     global roomba_vector_scale
     global roomba_angular_scale
-    global send_vector_roomba
 
-    if joint == 4 and send_vector_roomba:
-        send_vector_roomba = False
+    if joint == 4:
         # TODO: Not sure if that's the right axis
         cmd_vel.linear.x = roomba_vector_scale * twist.linear.x
         roomba_twist_write.publish(cmd_vel)
-        rospy.logdebug('Publishing a cmd_vel')
-    elif joint == 5 and send_vector_roomba:
-        send_vector_roomba = False
+        # rospy.logdebug('Publishing a cmd_vel')
+    elif joint == 5:
         # TODO: Not sure if that's the right axis
         cmd_vel.angular.z = roomba_angular_scale * twist.angular.z
         roomba_twist_write.publish(cmd_vel)
-        rospy.logdebug('Publishing a cmd_vel')
+        # rospy.logdebug('Publishing a cmd_vel')
     else:
         # this is the equivalent of sending a uarm message
         keyboard_teleop_callback(twist)
@@ -160,21 +154,15 @@ def update_rosparams(event):
 
     # rospy.loginfo('updating rosparams')
     if rospy.has_param('/pnr_core/roomba_angular_scale'):
-        roomba_angular_scale = rospy.get_param('/pnr_core/roomba_vector_scale')
-    if rospy.has_param('/pnr_core/uswift_vector_scale'):
-        uswift_vector_scale = rospy.get_param('/pnr_core/uswift_vector_scale')
-
-
-# allow new vectors to be sent to the Roomba
-def open_roomba_vector(event):
-    global send_vector_roomba
-    send_vector_roomba = True
+        roomba_angular_scale = rospy.get_param('/pnr_core/roomba_angular_scale')
+    if rospy.has_param('/pnr_core/roomba_vector_scale'):
+        roomba_vector_scale = rospy.get_param('/pnr_core/roomba_vector_scale')
 
 
 #
 #
 # pnr_core
-# 
+#
 def pnr_core():
     global joint0_write
     global joint1_write
@@ -194,19 +182,19 @@ def pnr_core():
 
     ## Publishers (initialization)
     joint0_write = rospy.Publisher(
-        '/pnr_swiftpro/joint0_write',
+        '/pnr_swiftpro/joint0_write_t',
         Float64,
         queue_size=1)
     joint1_write = rospy.Publisher(
-        '/pnr_swiftpro/joint1_write',
+        '/pnr_swiftpro/joint1_write_t',
         Float64,
         queue_size=1)
     joint2_write = rospy.Publisher(
-        '/pnr_swiftpro/joint2_write',
+        '/pnr_swiftpro/joint2_write_t',
         Float64,
         queue_size=1)
     joint3_write = rospy.Publisher(
-        '/pnr_swiftpro/joint3_write',
+        '/pnr_swiftpro/joint3_write_t',
         Float64,
         queue_size=1)
 
@@ -216,7 +204,7 @@ def pnr_core():
         queue_size=1)
 
     roomba_twist_write = rospy.Publisher(
-        '/cmd_vel', 
+        '/cmd_vel_t', 
         Twist, 
         queue_size=1)
 
@@ -240,7 +228,7 @@ def pnr_core():
 
     ## test for parameters
     #
-    # NB: For some reason, rospy always starts in the '/' namespace. 
+    # NB: For some reason, rospy always starts in the '/' namespace.
     # Therefore, all resource referencing must be done with the absolute
     # resource path. (i.e. '/pnr_base/thing' instead of just 'thing')
     if not rospy.has_param('/pnr_core/roomba_vector_scale'):
@@ -255,7 +243,7 @@ def pnr_core():
     if not rospy.has_param('/pnr_core/roomba_angular_scale'):
         rospy.logwarn('rosparam "/pnr_core/roomba_angular_scale" not found.')
         rospy.logwarn(
-            'Defaulting to /pnr_core/roomba_angular_scale = %.2f.', 
+            'Defaulting to /pnr_core/roomba_angular_scale = %.2f.',
             roomba_angular_scale)
         rospy.set_param('/pnr_core/roomba_angular_scale', roomba_angular_scale)
     else:
@@ -270,10 +258,6 @@ def pnr_core():
             ROSPARAM_UPDATE_PERIOD)
         rospy.Timer(rospy.Duration(ROSPARAM_UPDATE_PERIOD),
             update_rosparams)
-
-        rospy.loginfo('Sending a Roomba vector every %g seconds...',
-            0.2)
-        rospy.Timer(rospy.Duration(0.2), open_roomba_vector) # hard-code for now...
 
         rospy.loginfo('pnr_core -- Waiting for callbacks...')
         # callbacks are called so long as this node is still alive

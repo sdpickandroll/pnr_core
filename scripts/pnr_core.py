@@ -250,17 +250,17 @@ def pnr_core():
 
     ## Publishers (initialization)
     uswift_vector_write = rospy.Publisher(
-        '/pnr_swiftpro/vector_write', 
+        '/pnr_swiftpro/vector_write_t', 
         Vector3, 
         queue_size=1)
 
     uswift_actuator_write = rospy.Publisher(
-        '/pnr_swiftpro/actuator_write', 
+        '/pnr_swiftpro/actuator_write_t', 
         Bool, 
         queue_size=1)
 
     roomba_twist_write = rospy.Publisher(
-        '/cmd_vel', 
+        '/cmd_vel_t', 
         Twist, 
         queue_size=1)
 
