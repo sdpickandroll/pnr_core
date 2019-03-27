@@ -4,7 +4,7 @@ import rospy
 
 from std_msgs.msg import Bool
 # from std_msgs.msg import String
-# from std_msgs.msg import Empty
+from std_msgs.msg import Empty
 
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Vector3
@@ -33,6 +33,7 @@ ROSPARAM_UPDATE_PERIOD = 0.5
 uswift_vector_write = 0
 uswift_actuator_write = 0
 roomba_twist_write = 0
+uswift_home = 0
 
 
 ## Assorted global variables
@@ -86,7 +87,6 @@ def keyboard_teleop_callback(twist):
     uswift_vector_write.publish(uswift_vector_out)
 
 
-
 # actuator callback
 # this is never actually called by a subscriber, but it is called by several 
 # methods that are.
@@ -97,7 +97,6 @@ def actuator_write_callback(state):
     uswift_actuator_out = state
     uswift_actuator_write.publish(uswift_actuator_out)
     rospy.loginfo('Toggling the uSwift actuator')
-
 
 
 # joystick callback specific to the spacenav
@@ -135,7 +134,6 @@ def spacenav_joy_callback(joy):
         spacenav_b1_pressed = False
 
 
-
 # spacenav twist callback
 def spacenav_twist_callback(twist):
     global roomba_twist_write
@@ -170,8 +168,9 @@ def joystick_callback(joy):
     global uswift_vector_out
     global cmd_vel
     global xbox_a_pressed
+    global xbox_x_pressed
 
-    # we may have to filter for low-amplitude signals
+    # we may have to filter for small signals
     # if the joy library doesn't have a setting for that already
     cmd_vel.linear.x = roomba_vector_scale * joy.axes[1]
     cmd_vel.angular.x = roomba_angular_scale * joy.axes[0] # eh one of these will work
@@ -190,6 +189,14 @@ def joystick_callback(joy):
     if not joy.buttons[0] and xbox_a_pressed:
         # might have to create a threshold for bouncing
         xbox_a_pressed = False
+
+    if joy.buttons[2]:
+        # home the uswift
+        xbox_x_pressed = True
+        uswift_home.publish(Empty())
+
+    if not joy.buttons[2] and xbox_x_pressed:
+        xbox_x_pressed = False
 
     roomba_twist_write.publish(cmd_vel)
     # rospy.loginfo('Publishing a uSwift vector')
@@ -221,6 +228,7 @@ def pnr_core():
     global uswift_vector_write
     global uswift_actuator_write
     global roomba_twist_write
+    global uswift_home
     global uswift_vector_scale
     global roomba_vector_scale
     global roomba_angular_scale
@@ -248,6 +256,11 @@ def pnr_core():
     roomba_twist_write = rospy.Publisher(
         '/cmd_vel_t',
         Twist,
+        queue_size=1)
+
+    uswift_home = rospy.Publisher(
+        '/pnr_swiftpro/home',
+        Empty,
         queue_size=1)
 
 
