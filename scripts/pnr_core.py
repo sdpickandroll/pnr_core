@@ -2,10 +2,9 @@
 
 import rospy
 
-
 from std_msgs.msg import Bool
 # from std_msgs.msg import String
-# from std_msgs.msg import Empty
+from std_msgs.msg import Empty
 
 from geometry_msgs.msg import Point
 from geometry_msgs.msg import Vector3
@@ -20,20 +19,21 @@ from sensor_msgs.msg import Joy
 uswift_vector_scale = 25.0
 
 # /pnr_core/roomba_vector_scale
-roomba_vector_scale = 1.0
+roomba_vector_scale = 0.2
 
 # /pnr_core/roomba_angular_scale
-roomba_angular_scale = 1.0
+roomba_angular_scale = 1.5
 
 # update period (seconds)
 ROSPARAM_UPDATE_PERIOD = 0.5
 
 
-## Publishers 
+## Publishers
 # (we put these declarations here to make them global)
 uswift_vector_write = 0
 uswift_actuator_write = 0
 roomba_twist_write = 0
+uswift_home = 0
 
 
 ## Assorted global variables
@@ -79,13 +79,12 @@ def keyboard_teleop_callback(twist):
     global uswift_vector_scale
 
     # rospy.loginfo('Publishing a uSwift vector')
-    
+
     uswift_vector_out.x = uswift_vector_scale * twist.linear.x
     uswift_vector_out.y = uswift_vector_scale * twist.linear.y
     uswift_vector_out.z = uswift_vector_scale * twist.linear.z
 
     uswift_vector_write.publish(uswift_vector_out)
-
 
 
 # actuator callback
@@ -98,7 +97,6 @@ def actuator_write_callback(state):
     uswift_actuator_out = state
     uswift_actuator_write.publish(uswift_actuator_out)
     rospy.loginfo('Toggling the uSwift actuator')
-
 
 
 # joystick callback specific to the spacenav
@@ -136,7 +134,6 @@ def spacenav_joy_callback(joy):
         spacenav_b1_pressed = False
 
 
-
 # spacenav twist callback
 def spacenav_twist_callback(twist):
     global roomba_twist_write
@@ -151,10 +148,10 @@ def spacenav_twist_callback(twist):
         cmd_vel.angular.x = roomba_angular_scale * twist.angular.x
         cmd_vel.angular.y = roomba_angular_scale * twist.angular.y
         cmd_vel.angular.z = roomba_angular_scale * twist.angular.z
-        
+
         roomba_twist_write.publish(cmd_vel)
         # rospy.loginfo('Publishing a cmd_vel')
-    else:
+    elif not control_roomba:
         # this is the equivalent of sending a uarm message
         keyboard_teleop_callback(twist)
 
@@ -171,17 +168,18 @@ def joystick_callback(joy):
     global uswift_vector_out
     global cmd_vel
     global xbox_a_pressed
+    global xbox_x_pressed
 
-    # we may have to filter for low-amplitude signals
+    # we may have to filter for small signals
     # if the joy library doesn't have a setting for that already
     cmd_vel.linear.x = roomba_vector_scale * joy.axes[1]
     cmd_vel.angular.x = roomba_angular_scale * joy.axes[0] # eh one of these will work
     cmd_vel.angular.y = roomba_angular_scale * joy.axes[0]
     cmd_vel.angular.z = roomba_angular_scale * joy.axes[0]
-    
-    uswift_vector_out.x = uswift_vector_scale * joy.axes[3]
-    uswift_vector_out.y = uswift_vector_scale * joy.axes[4]
-    uswift_vector_out.z = uswift_vector_scale * (joy.axes[2] - joy.axes[5])  # not sure how I want to do this
+
+    uswift_vector_out.x = uswift_vector_scale * joy.axes[4]
+    uswift_vector_out.y = uswift_vector_scale * joy.axes[3]
+    uswift_vector_out.z = 0.25 * uswift_vector_scale * (joy.axes[2] - joy.axes[5])
 
     if joy.buttons[0] and not xbox_a_pressed:
         # toggle the actuator
@@ -192,7 +190,14 @@ def joystick_callback(joy):
         # might have to create a threshold for bouncing
         xbox_a_pressed = False
 
-    # rospy.loginfo('Publishing a cmd_vel')
+    if joy.buttons[2]:
+        # home the uswift
+        xbox_x_pressed = True
+        uswift_home.publish(Empty())
+
+    if not joy.buttons[2] and xbox_x_pressed:
+        xbox_x_pressed = False
+
     roomba_twist_write.publish(cmd_vel)
     # rospy.loginfo('Publishing a uSwift vector')
     uswift_vector_write.publish(uswift_vector_out)
@@ -210,20 +215,20 @@ def update_rosparams(event):
     if rospy.has_param('/pnr_core/roomba_vector_scale'):
         roomba_vector_scale = rospy.get_param('/pnr_core/roomba_vector_scale')
     if rospy.has_param('/pnr_core/roomba_angular_scale'):
-        roomba_angular_scale = rospy.get_param('/pnr_core/roomba_vector_scale')
+        roomba_angular_scale = rospy.get_param('/pnr_core/roomba_angular_scale')
     if rospy.has_param('/pnr_core/uswift_vector_scale'):
         uswift_vector_scale = rospy.get_param('/pnr_core/uswift_vector_scale')
-
 
 
 #
 #
 # pnr_core
-# 
+#
 def pnr_core():
     global uswift_vector_write
     global uswift_actuator_write
     global roomba_twist_write
+    global uswift_home
     global uswift_vector_scale
     global roomba_vector_scale
     global roomba_angular_scale
@@ -237,25 +242,32 @@ def pnr_core():
 
     ## Publishers (initialization)
     uswift_vector_write = rospy.Publisher(
-        '/pnr_swiftpro/vector_write', 
-        Vector3, 
+        '/pnr_swiftpro/vector_write_t',
+        Vector3,
         queue_size=1)
 
+    # NB: this one does not have a '_t' at the end because it doesn't
+    # get throttled.
     uswift_actuator_write = rospy.Publisher(
-        '/pnr_swiftpro/actuator_write', 
-        Bool, 
+        '/pnr_swiftpro/actuator_write',
+        Bool,
         queue_size=1)
 
     roomba_twist_write = rospy.Publisher(
-        '/cmd_vel', 
-        Twist, 
+        '/cmd_vel_t',
+        Twist,
+        queue_size=1)
+
+    uswift_home = rospy.Publisher(
+        '/pnr_swiftpro/home',
+        Empty,
         queue_size=1)
 
 
     ## Subscribers
     rospy.Subscriber(
-        '/teleop_keyboard/twist', 
-        Twist, 
+        '/teleop_keyboard/twist',
+        Twist,
         keyboard_teleop_callback)
 
     rospy.Subscriber(
@@ -276,13 +288,13 @@ def pnr_core():
 
     ## test for parameters
     #
-    # NB: For some reason, rospy always starts in the '/' namespace. 
+    # NB: For some reason, rospy always starts in the '/' namespace.
     # Therefore, all resource referencing must be done with the absolute
     # resource path. (i.e. '/pnr_base/thing' instead of just 'thing')
     if not rospy.has_param('/pnr_core/uswift_vector_scale'):
         rospy.logwarn('rosparam "/pnr_core/uswift_vector_scale" not found.')
         rospy.logwarn(
-            'Defaulting to /pnr_core/uswift_vector_scale = %.2f.', 
+            'Defaulting to /pnr_core/uswift_vector_scale = %.2f.',
             uswift_vector_scale)
         rospy.set_param('/pnr_core/uswift_vector_scale', uswift_vector_scale)
     else:
@@ -300,7 +312,7 @@ def pnr_core():
     if not rospy.has_param('/pnr_core/roomba_angular_scale'):
         rospy.logwarn('rosparam "/pnr_core/roomba_angular_scale" not found.')
         rospy.logwarn(
-            'Defaulting to /pnr_core/roomba_angular_scale = %.2f.', 
+            'Defaulting to /pnr_core/roomba_angular_scale = %.2f.',
             roomba_angular_scale)
         rospy.set_param('/pnr_core/roomba_angular_scale', roomba_angular_scale)
     else:
@@ -310,13 +322,13 @@ def pnr_core():
     ## Main program loop
     while not rospy.is_shutdown():
         # update rosparams every 1000 ms
-        rospy.loginfo('Updating rosparams every %g seconds...',
+        rospy.loginfo('Set to update rosparams every %g seconds.',
             ROSPARAM_UPDATE_PERIOD)
         rospy.Timer(rospy.Duration(ROSPARAM_UPDATE_PERIOD),
             update_rosparams)
 
         rospy.loginfo('pnr_core -- Waiting for callbacks...')
-        # callbacks run synchronously so long as this node is still alive
+        # callbacks run automagically so long as this node is still alive
         rospy.spin()
 
 

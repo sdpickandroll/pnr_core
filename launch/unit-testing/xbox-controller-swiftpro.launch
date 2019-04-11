@@ -5,20 +5,23 @@
 
  <!-- Change these values to whatever is best -->
  <param name="/pnr_core/uswift_vector_scale" type="double" value="25.0" />
- <param name="/pnr_core/roomba_vector_scale" type="double" value="1.0" />
- <param name="/pnr_core/roomba_angular_scale" type="double" value="1.0" />
+ <param name="/pnr_core/roomba_vector_scale" type="double" value="0.2" />
+ <param name="/pnr_core/roomba_angular_scale" type="double" value="1.5" />
  <node pkg="pnr_core" type="pnr_core.py" name="pnr_core_node" output="screen" />
  
  <node pkg="pnr_swiftpro" type="pnr_swiftpro" name="pnr_swiftpro" output="screen">
   <param name="port" type="string" value="/dev/ttyACM0" />
   <param name="move_speed" type="int" value="5000" />
   <param name="pose_update_period" type="double" value="0.3" /> 
-  <param name="vector_flood_delay" type="double" value="0.2" />
  </node>
  
  <node pkg="joy" type="joy_node" name="$(anon joy_node)" output="screen">
   <!-- <remap from="/joy" to="/xbox/joy" /> -->
  </node>
+
+ <node name="vector_write_throttler" type="throttle" pkg="topic_tools" args="messages /pnr_swiftpro/vector_write_t 6 /pnr_swiftpro/vector_write" />
+ <node name="cmd_vel_throttler" type="throttle" pkg="topic_tools" args="messages /cmd_vel_t 6 /cmd_vel" />
+
 
 </launch>
 
