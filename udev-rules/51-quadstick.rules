@@ -1,0 +1,1 @@
+KERNEL=="js?", SUBSYSTEM=="input", ATTRS{idVendor}=="16d0", ATTRS{idProduct}=="092b", SYMLINK+="quadstick"

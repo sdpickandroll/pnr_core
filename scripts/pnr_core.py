@@ -25,7 +25,11 @@ roomba_vector_scale = 0.2
 roomba_angular_scale = 1.5
 
 # update period (seconds)
-ROSPARAM_UPDATE_PERIOD = 0.5
+ROSPARAM_UPDATE_PERIOD = 2
+
+# vector publish period (seconds)
+# (can be small since we throttle each message anyway)
+VECTOR_PUBLISH_PERIOD = 0.05
 
 
 ## Publishers
@@ -54,19 +58,36 @@ cmd_vel = Twist()
 spacenav_b0_pressed = False
 spacenav_b1_pressed = False
 
-# xbox controller globals
-xbox_a_pressed = False      # 0
-xbox_b_pressed = False      # 1
-xbox_x_pressed = False      # 2
-xbox_y_pressed = False      # 3
-xbox_lb_pressed = False     # 4
-xbox_rb_pressed = False     # 5
-xbox_back_pressed = False   # 6
-xbox_start_pressed = False  # 7
-xbox_power_pressed = False  # 8
-xbox_lsb_pressed = False    # 9
-xbox_rsb_pressed = False    # 10
+# quadstick globals
+# indices are for the quadstick's first (i.e. leftmost) config ONLY
+# yes, these are a mess. best to keep a list on hand.
+quadstick_r_pf = False   # 7
+quadstick_r_sp = False   # 5
+quadstick_m_pf = False   # 2
+quadstick_m_sp = False   # 0
+quadstick_l_pf = False   # 6
+quadstick_l_sp = False   # 4
+quadstick_lm_sp = False  # 10
+quadstick_rm_pf = False  # 3
+quadstick_rm_sp = False  # 11
+quadstick_lip = False    # 1
 
+# xbox controller globals
+xbox_a_pressed = False       # 0
+xbox_b_pressed = False       # 1
+xbox_x_pressed = False       # 2
+xbox_y_pressed = False       # 3
+xbox_lb_pressed = False      # 4
+xbox_rb_pressed = False      # 5
+xbox_back_pressed = False    # 6
+xbox_start_pressed = False   # 7
+xbox_power_pressed = False   # 8
+xbox_lsb_pressed = False     # 9
+xbox_rsb_pressed = False     # 10
+xbox_d_up_pressed = False    # axes[-1] == 1.0
+xbox_d_down_pressed = False  # axes[-1] == -1.0
+xbox_d_left_pressed = False  # axes[-2] == 1.0
+xbox_d_right_pressed = False # axes[-2] == -1.0
 
 
 ## Callbacks
@@ -76,15 +97,12 @@ xbox_rsb_pressed = False    # 10
 def keyboard_teleop_callback(twist):
     global uswift_vector_write
     global uswift_vector_out
-    global uswift_vector_scale
 
     # rospy.loginfo('Publishing a uSwift vector')
 
     uswift_vector_out.x = uswift_vector_scale * twist.linear.x
     uswift_vector_out.y = uswift_vector_scale * twist.linear.y
     uswift_vector_out.z = uswift_vector_scale * twist.linear.z
-
-    uswift_vector_write.publish(uswift_vector_out)
 
 
 # actuator callback
@@ -138,29 +156,25 @@ def spacenav_joy_callback(joy):
 def spacenav_twist_callback(twist):
     global roomba_twist_write
     global cmd_vel
-    global roomba_vector_scale
-    global roomba_angular_scale
 
-    if control_roomba:
-        cmd_vel.linear.x = roomba_vector_scale * twist.linear.x
-        cmd_vel.linear.y = roomba_vector_scale * twist.linear.y
-        cmd_vel.linear.z = roomba_vector_scale * twist.linear.z
-        cmd_vel.angular.x = roomba_angular_scale * twist.angular.x
-        cmd_vel.angular.y = roomba_angular_scale * twist.angular.y
-        cmd_vel.angular.z = roomba_angular_scale * twist.angular.z
+    # test to make sure we're getting input. if not, ignore.
+    if abs(cmd_vel.linear.x) + abs(cmd_vel.linear.y) + abs(cmd_vel.linear.y)\
+        abs(cmd_vel.angular.x) + abs(cmd_vel.angular.y) + abs(cmd_vel.angular.z)
+            > 0:
+        if control_roomba:
+            cmd_vel.linear.x = roomba_vector_scale * twist.linear.x
+            cmd_vel.linear.y = roomba_vector_scale * twist.linear.y
+            cmd_vel.linear.z = roomba_vector_scale * twist.linear.z
+            cmd_vel.angular.z = roomba_angular_scale * twist.angular.z
 
-        roomba_twist_write.publish(cmd_vel)
-        # rospy.loginfo('Publishing a cmd_vel')
-    elif not control_roomba:
-        # this is the equivalent of sending a uarm message
-        keyboard_teleop_callback(twist)
+        elif not control_roomba:
+            # this is the equivalent of sending a uarm message
+            keyboard_teleop_callback(twist)
 
 
 
-# generic joystick and controller callback
-def joystick_callback(joy):
-    global roomba_vector_scale
-    global roomba_angular_scale
+# xbox joystick callback
+def xbox_callback(joy):
     global uswift_vector_scale
     global roomba_twist_write
     global uswift_vector_write
@@ -169,35 +183,173 @@ def joystick_callback(joy):
     global cmd_vel
     global xbox_a_pressed
     global xbox_x_pressed
+    global xbox_d_up_pressed
+    global xbox_d_down_pressed
+    global xbox_d_left_pressed
+    global xbox_d_right_pressed
 
-    # we may have to filter for small signals
-    # if the joy library doesn't have a setting for that already
-    cmd_vel.linear.x = roomba_vector_scale * joy.axes[1]
-    cmd_vel.angular.x = roomba_angular_scale * joy.axes[0] # eh one of these will work
-    cmd_vel.angular.y = roomba_angular_scale * joy.axes[0]
-    cmd_vel.angular.z = roomba_angular_scale * joy.axes[0]
+    # filter for small signals
+    # not sure if the joy library has a setting for this already
+    if abs(joy.axes[1]) > 0.1:
+        cmd_vel.linear.x = roomba_vector_scale * joy.axes[1]
+    else:
+        cmd_vel.linear.x = 0
+    
+    if abs(joy.axes[0]) > 0.1:
+        cmd_vel.angular.z = roomba_angular_scale * joy.axes[0]
+    else:
+        cmd_vel.angular.z = 0
 
-    uswift_vector_out.x = uswift_vector_scale * joy.axes[4]
-    uswift_vector_out.y = uswift_vector_scale * joy.axes[3]
+    if abs(joy.axes[4]) > 0.1:
+        uswift_vector_out.x = uswift_vector_scale * joy.axes[4]
+    else:
+        uswift_vector_out.x = 0
+
+    if abs(joy.axes[3]) > 0.1:
+        uswift_vector_out.y = uswift_vector_scale * joy.axes[3]
+    else:
+        uswift_vector_out.y = 0
+    
     uswift_vector_out.z = 0.25 * uswift_vector_scale * (joy.axes[2] - joy.axes[5])
 
     if joy.buttons[0] and not xbox_a_pressed:
         # toggle the actuator
         xbox_a_pressed = True
         actuator_write_callback(Bool(not uswift_actuator_out.data))
-
-    if not joy.buttons[0] and xbox_a_pressed:
+    elif xbox_a_pressed:
         # might have to create a threshold for bouncing
         xbox_a_pressed = False
 
-    if joy.buttons[2]:
+    if joy.buttons[1] and not xbox_b_pressed:
         # home the uswift
-        xbox_x_pressed = True
+        xbox_b_pressed = True
         uswift_home.publish(Empty())
+    elif xbox_b_pressed:
+        xbox_b_pressed = False
 
-    if not joy.buttons[2] and xbox_x_pressed:
-        xbox_x_pressed = False
+    if joy.axes[-1] == 1.0 and not xbox_d_up_pressed:
+        xbox_d_up_pressed = True
+    elif xbox_d_up_pressed:
+        xbox_d_up_pressed = False
+    if joy.axes[-1] == -1.0 and not xbox_d_down_pressed:
+        xbox_d_down_pressed = True
+    elif xbox_d_down_pressed:
+        xbox_d_down_pressed = False
+    if joy.axes[-2] == 1.0 and not xbox_d_left_pressed:
+        xbox_d_left_pressed = True
+    elif xbox_d_left_pressed:
+        xbox_d_left_pressed = False
+    if joy.axes[-2] == -1.0 and not xbox_d_right_pressed:
+        xbox_d_right_pressed = True
+    elif xbox_d_right_pressed:
+        xbox_d_right_pressed = False
 
+    # add some factor for the d-pad
+    cmd_vel.linear.x += roomba_vector_scale * \
+                        (xbox_d_up_pressed - xbox_d_down_pressed)
+    cmd_vel.angular.z += roomba_angular_scale * \
+                         (xbox_d_left_pressed - xbox_d_right_pressed)
+
+
+
+def quadstick_callback(joy):
+    global quadstick_r_pf   # 7
+    global quadstick_r_sp   # 5
+    global quadstick_m_pf   # 2
+    global quadstick_m_sp   # 0
+    global quadstick_l_pf   # 6
+    global quadstick_l_sp   # 4
+    global quadstick_lm_sp  # 10
+    global quadstick_rm_pf  # 3
+    global quadstick_rm_sp  # 11
+    global quadstick_lip    # 1
+    global roomba_twist_write
+    global uswift_vector_write
+    global actuator_write_callback
+    global uswift_vector_out
+    global cmd_vel
+    
+    # there are 10 buttons. 10. buttons.
+    # not all of them are used in this program, but I included all of
+    # them here because I'm not sure what's going to be used at the end
+    # of the day
+    
+    if joy.buttons[0] and not quadstick_m_sp:
+        quadstick_m_sp = True
+    elif quadstick_m_sp:
+        quadstick_m_sp = False
+        
+    if joy.buttons[1] and not quadstick_lip:
+        quadstick_lip = True
+    elif quadstick_lip:
+        quadstick_lip = False
+
+    if joy.buttons[2] and not quadstick_m_pf:
+        quadstick_m_pf = True
+    elif quadstick_m_pf:
+        quadstick_m_pf = False
+
+    # toggles the actuator
+    if joy.buttons[3] and not quadstick_rm_pf:
+        # toggle actuator
+        actuator_write_callback(Bool(not uswift_actuator_out.data))
+        quadstick_rm_pf = True
+    elif quadstick_rm_pf:
+        quadstick_rm_pf = False
+
+    if joy.buttons[4] and not quadstick_l_sp:
+        quadstick_l_sp = True
+    elif quadstick_l_sp:
+        quadstick_l_sp = False
+
+    if joy.buttons[5] and not quadstick_r_sp:
+        quadstick_r_sp = True
+    elif quadstick_r_sp:
+        quadstick_r_sp = False
+
+    if joy.buttons[6] and not quadstick_l_pf:
+        quadstick_l_pf = True
+    elif quadstick_l_pf:
+        quadstick_l_pf = False
+
+    if joy.buttons[7] and not quadstick_r_pf:
+        quadstick_r_pf = True
+    elif quadstick_r_pf:
+        quadstick_r_pf = False
+
+    # homes the uswift
+    if joy.buttons[10] and not quadstick_lm_sp:
+        # toggle the actuator
+        uswift_home.publish(Empty())
+        quadstick_lm_sp = True
+    elif quadstick_lm_sp:
+        quadstick_lm_sp = False
+
+    if joy.buttons[11] and not quadstick_rm_sp:
+        quadstick_rm_sp = True
+    elif quadstick_rm_sp:
+        quadstick_rm_sp = False
+
+    uvs = uswift_vector_scale
+    rvs = roomba_vector_scale
+        
+    uswift_vector_out.x = uvs * joy.axes[0]
+    uswift_vector_out.y = uvs * joy.axes[1]
+    uswift_vector_out.z = uvs * (quadstick_r_pf - quadstick_r_sp)
+
+    cmd_vel.linear.x = rvs * (quadstick_m_pf - quadstick_m_sp)
+    cmd_vel.linear.y = rvs * (quadstick_m_pf - quadstick_m_sp)
+    cmd_vel.linear.z = rvs * (quadstick_m_pf - quadstick_m_sp)
+    cmd_vel.angular.z = rvs * (quadstick_l_sp - quadstick_r_pf)
+
+
+
+# publish all controller-dependent messages
+# called every VECTOR_PUBLISH_PERIOD seconds
+#
+# we calculated each of these vectors in the xbox_callback method or the
+# quadstick_callback method, whichever was called last
+def publish():
     roomba_twist_write.publish(cmd_vel)
     # rospy.loginfo('Publishing a uSwift vector')
     uswift_vector_write.publish(uswift_vector_out)
@@ -205,7 +357,7 @@ def joystick_callback(joy):
 
 
 # update rosparams
-# This method is called every 500 milliseconds
+# called every ROSPARAM_UPDATE_PERIOD seconds
 def update_rosparams(event):
     global uswift_vector_scale
     global roomba_vector_scale
@@ -218,6 +370,7 @@ def update_rosparams(event):
         roomba_angular_scale = rospy.get_param('/pnr_core/roomba_angular_scale')
     if rospy.has_param('/pnr_core/uswift_vector_scale'):
         uswift_vector_scale = rospy.get_param('/pnr_core/uswift_vector_scale')
+
 
 
 #
@@ -281,9 +434,19 @@ def pnr_core():
         spacenav_twist_callback)
 
     rospy.Subscriber(
-        '/joy',
+        '/quadstick/joy',
         Joy,
-        joystick_callback)
+        quadstick_callback)
+    
+    rospy.Subscriber(
+        '/xbox_adaptive/joy',
+        Joy,
+        xbox_callback)
+
+    rospy.Subscriber(
+        '/xbox/joy',
+        Joy,
+        xbox_callback)
 
 
     ## test for parameters
@@ -326,6 +489,10 @@ def pnr_core():
             ROSPARAM_UPDATE_PERIOD)
         rospy.Timer(rospy.Duration(ROSPARAM_UPDATE_PERIOD),
             update_rosparams)
+        rospy.loginfo('Set to publish vectors every %g seconds.',
+            VECTOR_PUBLISH_PERIOD)
+        rospy.Timer(rospy.Duration(VECTOR_PUBLISH_PERIOD),
+            publish)
 
         rospy.loginfo('pnr_core -- Waiting for callbacks...')
         # callbacks run automagically so long as this node is still alive
